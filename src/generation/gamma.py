@@ -15,7 +15,7 @@ class Generator(BaseGenerator):
         # TODO
         pass
 
-    def generate_cloud_load_vectors(self):
+    def generate_cloud_load_vectors(self) -> np.ndarray:
         # TODO
         pass
 

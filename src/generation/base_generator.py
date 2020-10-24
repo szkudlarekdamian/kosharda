@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 class BaseGenerator(ABC):
     """
@@ -10,7 +11,7 @@ class BaseGenerator(ABC):
         pass
 
     @abstractmethod
-    def generate_cloud_load_vectors(self):
+    def generate_cloud_load_vectors(self) -> np.ndarray:
         pass
 
 
