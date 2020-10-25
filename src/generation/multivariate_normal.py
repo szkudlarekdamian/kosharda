@@ -4,12 +4,12 @@ import math
 
 from typing import Tuple
 
-from .base_generator import BaseGenerator
+from .base.generator import BaseGenerator
 
 
 class Generator(BaseGenerator):
     """
-    This generator utilizes multivariative normal distribution to generate random correlated vectors with normal distribution
+    This generator utilizes multivariate normal distribution to generate random correlated vectors with normal distribution
     """
     
     def __init__(self, n: int, s: int, cor: float, means_range: Tuple[float, float], stds_range: Tuple[float, float]) -> None:
@@ -80,4 +80,4 @@ if __name__ == '__main__':
     assert vectors.shape == (num, size)
 
     su = np.sum(vectors)
-    assert estimated * 0.90 < su < estimated*1.1
+    assert estimated * 0.90 < su < estimated*1.1, "Estimated was: {}, actual was: {}".format(estimated, su)
