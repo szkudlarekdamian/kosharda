@@ -1,5 +1,5 @@
 import numpy as np
-from generation.gamma import Generator
+from ..generation.gamma import Generator
 
 
 class Node:
