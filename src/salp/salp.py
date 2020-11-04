@@ -8,16 +8,15 @@ class Node:
 
    :param int identity: ID of a node
    :param bool active: Determines whether any more shards can be assigned to the node
-   :param numpy.ndarray fs: List of ids of shards assigned to the node
-   :param numpy.ndarray ws: Summed load vector of shards assigned to the node
+   numpy.ndarray fs: List of ids of shards assigned to the node
+   numpy.ndarray ws: Summed load vector of shards assigned to the node
     """
 
-    def __init__(self, identity: int, active: bool = True, fs: np.ndarray = np.array([]),
-                 ws: np.ndarray = np.array([0.])) -> None:
+    def __init__(self, identity: int, active: bool = True) -> None:
         self.identity = identity
         self.active = active
-        self.fs = fs
-        self.ws = ws
+        self.fs = np.array([])
+        self.ws = np.array([0.])
 
     def get_modules_difference(self, w: np.ndarray, nwts: np.ndarray) -> np.ndarray:
         """
