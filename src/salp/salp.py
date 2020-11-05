@@ -107,6 +107,7 @@ class SALP:
                     delta = node.get_modules_difference(shard, self.nwts)
                     if delta > max_delta:
                         max_id = node.identity
+                        max_delta = delta
                     if verbose:
                         print("\tNode ID: {}\n"
                               "\tDelta: {}\n"
@@ -129,12 +130,17 @@ class SALP:
 
 
 if __name__ == '__main__':
-    _nodes = 4
-    _shards_num = 10
-    _load_history_length = 12
-    _correlation = 1.0
+    # _nodes = 4
+    # _shards_num = 10
+    # _load_history_length = 12
+    # _correlation = 1.0
+    #
+    # generator = Generator(_shards_num, _load_history_length, _correlation, (2.0, 4.0))
+    # _shards = generator.generate_cloud_load_vectors()
+    #
+    # SALP(_nodes, _shards, True)
 
-    generator = Generator(_shards_num, _load_history_length, _correlation, (2.0, 4.0))
-    _shards = generator.generate_cloud_load_vectors()
-    
-    SALP(_nodes, _shards, True)
+    N = 2
+    size = 2
+    instance = np.array([[3, 1], [3, 1], [3, 1], [1, 3], [1, 3], [1, 3]])
+    SALP(N, instance, True)
