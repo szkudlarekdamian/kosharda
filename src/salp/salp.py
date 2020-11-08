@@ -1,5 +1,5 @@
 import numpy as np
-from generation.gamma import Generator
+from ..generation.gamma import Generator
 
 
 class Node:
@@ -30,7 +30,7 @@ class Node:
         x2 = np.linalg.norm(ws + w - nwts)
         return x1 - x2
 
-    def shard_append(self, f: int, w: np.ndarray, nwts: np.ndarray) -> None:
+    def shard_append(self, f: int, w: np.ndarray) -> None:
         """
         Appends shard to the node. After this, the module of node load vector is calculated -
             when its value is greater than the module of normalized cloud load vector, the node becomes inactive.
@@ -42,6 +42,12 @@ class Node:
         self.fs = np.append(self.fs, f)
         self.ws.resize(w.shape)
         self.ws += w
+        
+
+    def check_active_state(self, nwts: np.ndarray) -> None:
+        """
+        Checks current node state and deactivates it if neccesary
+        """
         if np.linalg.norm(self.ws) > np.linalg.norm(nwts):
             self.active = False
 
@@ -115,7 +121,8 @@ class SALP:
                                       node.identity,
                                       delta))
             if max_id >= 0:
-                self.nodes[max_id].shard_append(shard_id, shard, self.nwts)
+                self.nodes[max_id].shard_append(shard_id, shard)
+                self.nodes[max_id].check_active_state(self.nwts)
             else:
                 print("MAX_ID < 0 ({})".format(max_id))
         if verbose:
