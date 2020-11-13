@@ -1,6 +1,5 @@
-# from ..salp.salp import Node
-from generation.gamma import Generator
-from salp.salp import Node
+from ..generation.gamma import Generator
+from ..salp.salp import Node
 
 import numpy as np
 
@@ -58,4 +57,3 @@ if __name__ == '__main__':
     gen = Generator(n=shards_number, s=12, cor=1.0, scals_range=(2.0, 4.0))
     input_shards = gen.generate_cloud_load_vectors()
     best_fit = BestFit(n=nodes_number, shards=input_shards, verbose=True)
-    best_fit.assign_shards()
