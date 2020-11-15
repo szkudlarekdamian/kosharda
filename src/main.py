@@ -18,14 +18,16 @@ if __name__ == '__main__':
         return SALP(N, load_vectors, False)
     # Best Fit
     def bf_wrapper(N: int, load_vectors):
-        return None
+        bf = BestFit(N, load_vectors, False, False)
+        bf.assign()
+        return bf
     # Round robin
     def rr_wrapper(N: int, load_vectors):
         return RoundRobin(N, load_vectors, False)
 
     algorithms = [
         ('SALP', salp_wrapper),
-        # ('BF', bf_wrapper),
+        ('BF', bf_wrapper),
         ('RR', rr_wrapper),
     ]
 
@@ -43,5 +45,5 @@ if __name__ == '__main__':
     gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
     df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value'])
 
-    df.to_csv('results/result.csv', index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result.csv'.format(N,F,size,repeats), index=False)
     
