@@ -78,11 +78,11 @@ class SALP:
 
     def print_basics(self) -> None:
         """Print shards, wts, nwts and lw"""
-        print("----------------DESCRIPTION----------------"
-              "Shards: {}\n\n\t"
-              "WTS: {}\n\n\t"
-              "NWTS: {}\n\n\t"
-              "LW: {}\n\n\t"
+        print("----------------DESCRIPTION----------------\n"
+              "Shards:\n{}\n\n"
+              "WTS:\n{}\n\n"
+              "NWTS:\n{}\n\n"
+              "LW:\n{}\n\n"
               .format(self.shards_orig, self.wts, self.nwts, self.lw))
 
     def __sort_shards_by_module(self, shards) -> list:

@@ -1,6 +1,5 @@
-# from ..salp.salp import Node
-from generation.gamma import Generator
-from salp.salp import Node
+from ..generation.gamma import Generator
+from ..salp.salp import Node
 
 import numpy as np
 
