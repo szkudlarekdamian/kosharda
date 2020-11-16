@@ -34,15 +34,14 @@ def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range
              generator_factory: Callable[[float], BaseGenerator], algorithms: List[Tuple[str, Callable]]):
     pbar = tqdm(total=repeats * len(cor_range) * len(load_range))
     for cor in cor_range:
-        generator = generator_factory(cor)
-        
-        estimated_load = generator.get_estimated_cloud_load()
-        estimated_node_load = estimated_load/size/N
-        
         for ro in load_range:
-            node_power = estimated_node_load/ro
-            
             for _ in range(repeats):
+                generator = generator_factory(cor)
+        
+                estimated_load = generator.get_estimated_cloud_load()
+                estimated_node_load = estimated_load/size/N
+                node_power = estimated_node_load/ro
+
                 load_vectors = generator.generate_cloud_load_vectors()
                 
                 for res in evaluate_algorithms(N, node_power, algorithms, load_vectors):
