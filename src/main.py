@@ -36,7 +36,7 @@ if __name__ == '__main__':
     cor_range = np.arange(0.0, 1.01, 0.05)
     load_range = np.arange(0.7, 0.91, 0.05)
     size=100
-    repeats=10
+    repeats=100
     rng = (2,4)
 
     def gamma_generator_factory(cor):
@@ -45,5 +45,5 @@ if __name__ == '__main__':
     gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
     df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value'])
 
-    df.to_csv('results/N{}-F{}-S{}-R{}-result-v2.csv'.format(N,F,size,repeats), index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result-v3.csv'.format(N,F,size,repeats), index=False)
     
