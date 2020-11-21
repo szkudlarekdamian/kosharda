@@ -1,5 +1,4 @@
 import numpy as np
-from ..generation.gamma import Generator
 
 
 class Node:
@@ -37,16 +36,16 @@ class Node:
 
         :param int f: ID of an appended shard
         :param numpy.ndarray w: Load vector of an appended shard
-        :param numpy.ndarray nwts: Normalized load vector of a cloud
         """
         self.fs = np.append(self.fs, f)
         self.ws.resize(w.shape)
         self.ws += w
-        
 
     def check_active_state(self, nwts: np.ndarray) -> None:
         """
         Checks current node state and deactivates it if neccesary
+
+        :param numpy.ndarray nwts: Normalized load vector of a cloud
         """
         if np.linalg.norm(self.ws) > np.linalg.norm(nwts):
             self.active = False
@@ -65,10 +64,12 @@ class SALP:
     lw: List of tuples[shard_id, shard_module], sorted in descending order by the value of shard module
     nodes: List of nodes of a cloud
     """
+
     def __init__(self, n: int, shards: np.ndarray, verbose: bool = False) -> None:
         self.shards_orig = shards
         self.wts = self.shards_orig.sum(axis=0)
         self.nwts = self.wts / n
+        self.cloud_disturbance = np.linalg.norm(self.wts - self.nwts)
         self.lw = self.__sort_shards_by_module(self.shards_orig)
         self.nodes = [Node(e) for e in range(0, n)]
         if verbose:
@@ -82,8 +83,9 @@ class SALP:
               "Shards:\n{}\n\n"
               "WTS:\n{}\n\n"
               "NWTS:\n{}\n\n"
+              "Cloud disturbance:\n{}\n\n"
               "LW:\n{}\n\n"
-              .format(self.shards_orig, self.wts, self.nwts, self.lw))
+              .format(self.shards_orig, self.wts, self.nwts, self.cloud_disturbance, self.lw))
 
     def __sort_shards_by_module(self, shards) -> list:
         """
@@ -117,12 +119,13 @@ class SALP:
                     if verbose:
                         print("\tNode ID: {}\n"
                               "\tDelta: {}\n"
-                              .format(
-                                      node.identity,
-                                      delta))
+                            .format(
+                            node.identity,
+                            delta))
             if max_id >= 0:
                 self.nodes[max_id].shard_append(shard_id, shard)
                 self.nodes[max_id].check_active_state(self.nwts)
+
             else:
                 print("MAX_ID < 0 ({})".format(max_id))
         if verbose:
