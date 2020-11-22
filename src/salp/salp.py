@@ -150,7 +150,7 @@ if __name__ == '__main__':
     #
     # SALP(_nodes, _shards, True)
 
-    N = 2
+    N = 4
     size = 2
-    instance = np.array([[3, 1], [3, 1], [3, 1], [1, 3], [1, 3], [1, 3]])
+    instance = np.array([[5, 2], [13, 4], [8, 12], [3, 3], [6, 80], [1, 6]])
     SALP(N, instance, True)

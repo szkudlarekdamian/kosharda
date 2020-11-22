@@ -5,6 +5,7 @@ from typing import Tuple, List, Callable
 import numpy as np
 from tqdm import tqdm
 
+
 def calculate_total_node_queueing_time(n: Node, power: float) -> float:
     stb = np.mean(n.ws)/power
     assert stb < 1, "Node {} is not stable".format(n.identity)
@@ -20,14 +21,18 @@ def calculate_all_nodes_queueing_time(nodes: List[Node], power: float) -> float:
     return total_ct
 
 
-def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, Callable]], load_vectors: np.ndarray):
+def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, Callable]], load_vectors: np.ndarray, nwts: np.ndarray):
     for name, func in algorithms:
         cloud = func(N, load_vectors)
         try:
             total_ct = calculate_all_nodes_queueing_time(cloud.nodes, node_power)
         except AssertionError:
             total_ct = -1
-        yield name, total_ct
+        try:
+            mean_cloud_disturbance = (np.mean([np.linalg.norm(n.ws - nwts) for n in cloud.nodes]))
+        except ArithmeticError:
+            mean_cloud_disturbance = -1
+        yield name, total_ct, mean_cloud_disturbance
 
 
 def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range: List[float], 
@@ -43,9 +48,8 @@ def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range
                 node_power = estimated_node_load/ro
 
                 load_vectors = generator.generate_cloud_load_vectors()
-                
-                for res in evaluate_algorithms(N, node_power, algorithms, load_vectors):
-                    yield((cor, ro) + res)
+                nwts = load_vectors.sum(axis=0) / N
+                for res in evaluate_algorithms(N, node_power, algorithms, load_vectors, nwts):
+                    yield (cor, ro) + res
                 pbar.update(1)
     pbar.close()
-                
