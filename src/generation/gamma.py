@@ -2,6 +2,8 @@ from typing import Tuple
 from .base.generator import BaseGenerator
 import numpy as np
 
+from numba import njit
+
 class Generator(BaseGenerator):
     """
     This is generator utilizes gamma distribution to generate load correlated vectors with gamma distribution
@@ -18,7 +20,8 @@ class Generator(BaseGenerator):
         
         cor = cor if cor < 1 else cor - 10**-8
         self.cov_mat = [[1.0 if i == j else cor for j in range(n)] for i in range(n)]
-        self.trans_mat = np.linalg.cholesky(self.cov_mat)
+        # self.trans_mat = np.linalg.cholesky(self.cov_mat)
+        self.trans_mat = do_cholesky(np.array(self.cov_mat))
         
         self.scales_vector = self.generator.uniform(self.r_start, self.r_end, size=self.num)
         
@@ -35,7 +38,8 @@ class Generator(BaseGenerator):
         mat = (mat - means)/stds
 
         # transform
-        mat = np.dot(self.trans_mat, mat.T).T
+        # mat = np.dot(self.trans_mat, mat.T).T
+        mat = do_dot(self.trans_mat, mat)
 
         # denormalize
         mat = (mat * stds + means)
@@ -44,6 +48,13 @@ class Generator(BaseGenerator):
         return mat.T
 
 
+@njit
+def do_dot(m1: np.ndarray, m2: np.ndarray) -> np.ndarray:
+    return np.dot(m1, m2.T).T
+    
+@njit
+def do_cholesky(m: np.ndarray) -> np.ndarray:
+    return np.linalg.cholesky(m)
 
 if __name__ == '__main__':
     num = 2
