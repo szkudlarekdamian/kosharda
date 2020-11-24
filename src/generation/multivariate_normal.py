@@ -6,6 +6,8 @@ from typing import Tuple
 
 from .base.generator import BaseGenerator
 
+from numba import njit
+
 
 class Generator(BaseGenerator):
     """
@@ -30,13 +32,16 @@ class Generator(BaseGenerator):
         self.means_vector = self.generator.uniform(self.m_start, self.m_end, n)
         self.stds_vector = self.generator.uniform(s_start, s_end, n)
 
-        self.cov_mat = [[0 for _ in range(n)] for _ in range(n)]
-        variances_vec = self.stds_vector ** 2
-        for i, cv in enumerate(variances_vec):  # column
-            for j, rv in enumerate(variances_vec):  # row
-                # na przekątnej wariancje
-                # pozostałych komórkach kowariancja (korelacja zdenormalizowana)
-                self.cov_mat[i][j] = self.cov_mat[j][i] = cv if i == j else cor * math.sqrt(cv)*math.sqrt(rv)
+        # self.cov_mat = [[0 for _ in range(n)] for _ in range(n)]
+        # self.cov_mat = np.zeros((n,n))
+        # variances_vec = self.stds_vector ** 2
+        # for i, cv in enumerate(variances_vec):  # column
+        #     for j, rv in enumerate(variances_vec):  # row
+        #         # na przekątnej wariancje
+        #         # pozostałych komórkach kowariancja (korelacja zdenormalizowana)
+        #         self.cov_mat[i][j] = self.cov_mat[j][i] = cv if i == j else cor * math.sqrt(cv)*math.sqrt(rv)
+
+        self.cov_mat = cov_mat(self.stds_vector, cor)
         
 
     def get_estimated_cloud_load(self) -> float:
@@ -47,6 +52,15 @@ class Generator(BaseGenerator):
         result[result < 0] = 0
         return result
 
+
+@njit(parallel=True)
+def cov_mat(stds: np.ndarray, cor: float) -> np.ndarray:
+    n = stds.size
+    cov_mat = np.dot(stds.reshape((n,1)), stds.reshape((n,1)).T) * cor
+    vars = stds ** 2
+    for i in range(n):
+        cov_mat[i][i] = vars[i]
+    return cov_mat
 
 def random_corelated_vectors(means_vec, variances_vec, cor=1, size=100):
     """
