@@ -8,6 +8,8 @@ from .base.generator import BaseGenerator
 
 from numba import njit
 
+from time import time
+
 
 class Generator(BaseGenerator):
     """
@@ -53,6 +55,55 @@ class Generator(BaseGenerator):
         return result
 
 
+class Generator2(BaseGenerator):
+
+    def __init__(self, n: int, s: int, cor: float, means_range: Tuple[float, float], stds_range: Tuple[float, float]) -> None:
+        """
+        TODO
+        :param n: int, number of vectors
+        :param s: int, number of elements in each vector
+        :param cor: float correlation coefficient
+        :param means_range: range of randomize
+        :param stds_range:
+        """
+        self.num = n
+        self.size = s
+        self.generator = np.random.default_rng()
+
+        self.m_start, self.m_end = means_range
+        s_start, s_end = stds_range
+        self.means_vector = self.generator.uniform(self.m_start, self.m_end, n)
+        self.stds_vector = self.generator.uniform(s_start, s_end, n)
+
+        cor = cor if cor < 1 else cor - 10**-8
+        self.cov_mat = cov_mat(self.stds_vector, cor)
+
+        self.trans_mat = do_cholesky(np.array(self.cov_mat))
+        
+
+    def get_estimated_cloud_load(self) -> float:
+        return (self.m_start + self.m_end)/2 * self.num * self.size
+
+    def generate_cloud_load_vectors(self) -> np.ndarray:
+
+        mat = self.generator.normal(np.zeros(self.num), np.ones(self.num), size=(self.size, self.num))
+
+        mat = do_dot(self.trans_mat, mat)
+        mat = mat + self.means_vector
+
+        mat[mat < 0] = 0
+
+        return mat.T
+
+
+@njit
+def do_dot(m1: np.ndarray, m2: np.ndarray) -> np.ndarray:
+    return np.dot(m1, m2.T).T
+    
+@njit
+def do_cholesky(m: np.ndarray) -> np.ndarray:
+    return np.linalg.cholesky(m)
+
 @njit(parallel=True)
 def cov_mat(stds: np.ndarray, cor: float) -> np.ndarray:
     n = stds.size
@@ -82,16 +133,19 @@ def random_corelated_vectors(means_vec, variances_vec, cor=1, size=100):
 
 
 if __name__ == '__main__':
-    num = 2
-    size = 1000
+    num = 1000
+    size = 100
     cor = 1.0
-    generator = Generator(num, size, cor, (4.0, 4.0), (1.0, 1.0))
+    generator = Generator2(num, size, cor, (4.0, 4.0), (1.0, 1.0))
 
     estimated = generator.get_estimated_cloud_load()
     assert estimated == num * size * 4 # (mean of means range)
 
+    st = time()
     vectors = generator.generate_cloud_load_vectors()
+    en = time()
     assert vectors.shape == (num, size)
+    print(en-st)
 
     su = np.sum(vectors)
     assert estimated * 0.90 < su < estimated*1.1, "Estimated was: {}, actual was: {}".format(estimated, su)

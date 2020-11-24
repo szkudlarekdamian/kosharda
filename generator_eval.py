@@ -20,7 +20,7 @@ if __name__ == '__main__':
         return ga.Generator(F, size, cor, (2,4))
 
     def mn_wrapper(cor: float) -> BaseGenerator:
-        return mn.Generator(F, size, cor, (4,6), (1,1))
+        return mn.Generator2(F, size, cor, (4,6), (1,1))
 
     def calc(wrapper, cor: float):
         generator = wrapper(cor)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # ------------
 
-    repeats = 20
+    repeats = 100
     mn_res = []
 
     pbar = tqdm(total=repeats * cor_rng.size)
