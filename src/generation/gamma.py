@@ -12,10 +12,10 @@ class Generator(BaseGenerator):
     ref: https://en.wikipedia.org/wiki/Gamma_distribution
     """
     
-    def __init__(self, n: int, s: int, cor: float, scals_range: Tuple[float, float], shape: float = 2.0) -> None:
+    def __init__(self, n: int, s: int, cor: float, scals_range: Tuple[float, float], shape: float = 2.0, seed: float = None) -> None:
         self.num = n
         self.size = s
-        self.generator = np.random.default_rng()
+        self.generator = np.random.default_rng(seed)
         self.r_start, self.r_end = scals_range
         self.shape = shape
 

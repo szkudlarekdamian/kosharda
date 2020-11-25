@@ -16,7 +16,7 @@ class Generator(BaseGenerator):
     This generator utilizes multivariate normal distribution to generate random correlated vectors with normal distribution
     """
     
-    def __init__(self, n: int, s: int, cor: float, means_range: Tuple[float, float], stds_range: Tuple[float, float]) -> None:
+    def __init__(self, n: int, s: int, cor: float, means_range: Tuple[float, float], stds_range: Tuple[float, float], seed: float = None) -> None:
         """
         TODO
         :param n: int, number of vectors
@@ -27,7 +27,7 @@ class Generator(BaseGenerator):
         """
         self.num = n
         self.size = s
-        self.generator = np.random.default_rng()
+        self.generator = np.random.default_rng(seed)
 
         self.m_start, self.m_end = means_range
         s_start, s_end = stds_range
@@ -57,7 +57,7 @@ class Generator(BaseGenerator):
 
 class Generator2(BaseGenerator):
 
-    def __init__(self, n: int, s: int, cor: float, means_range: Tuple[float, float], stds_range: Tuple[float, float]) -> None:
+    def __init__(self, n: int, s: int, cor: float, means_range: Tuple[float, float], stds_range: Tuple[float, float], seed: float = None) -> None:
         """
         TODO
         :param n: int, number of vectors
@@ -68,7 +68,7 @@ class Generator2(BaseGenerator):
         """
         self.num = n
         self.size = s
-        self.generator = np.random.default_rng()
+        self.generator = np.random.default_rng(seed)
 
         self.m_start, self.m_end = means_range
         s_start, s_end = stds_range
