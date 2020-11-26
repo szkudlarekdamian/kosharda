@@ -6,6 +6,8 @@ from numba import njit
 
 from time import time
 
+import math
+
 class Generator(BaseGenerator):
     """
     This is generator utilizes gamma distribution to generate load correlated vectors with gamma distribution
@@ -28,6 +30,8 @@ class Generator(BaseGenerator):
 
         self.scales_vector = self.generator.uniform(self.r_start, self.r_end, size=self.num)
 
+        self.means_vector = self.scales_vector * shape
+        self.stds_vector = self.scales_vector * math.sqrt(shape)
 
     def get_estimated_cloud_load(self) -> float:
         return (self.r_start + self.r_end)/2 * self.shape * self.num * self.size
@@ -37,16 +41,18 @@ class Generator(BaseGenerator):
         mat = self.generator.gamma(scale=self.scales_vector, shape=self.shape, size=(self.size, self.num))
 
         # normalize
-        means = np.mean(mat, axis=0)
-        stds = np.std(mat, axis=0)
-        mat = (mat - means)/stds
+        # means = np.mean(mat, axis=0)
+        # stds = np.std(mat, axis=0)
+        # mat = (mat - means)/stds
+        mat = (mat - self.means_vector)/self.stds_vector
 
         # transform
         # mat = np.dot(self.trans_mat, mat.T).T
         mat = do_dot(self.trans_mat, mat)
 
         # denormalize
-        mat = (mat * stds + means)
+        # mat = (mat * stds + means)
+        mat = (mat * self.stds_vector + self.means_vector)
         mat[mat < 0] = 0
 
         return mat.T
