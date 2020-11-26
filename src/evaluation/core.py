@@ -27,11 +27,13 @@ def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, C
         try:
             total_ct = calculate_all_nodes_queueing_time(cloud.nodes, node_power)
         except AssertionError:
-            total_ct = -1
+            total_ct = None
         try:
-            mean_cloud_disturbance = (np.mean([np.linalg.norm(n.ws - nwts) for n in cloud.nodes]))
+            nws = np.array(list(map(lambda x: x.ws, cloud.nodes)))
+            mean_cloud_disturbance = np.mean(np.abs((nws - nwts)/nwts)) #średni znormalizowany disturbance z dystansu manhattana
+            # mean_cloud_disturbance = (np.mean([np.linalg.norm(n.ws - nwts) for n in cloud.nodes]))
         except ArithmeticError:
-            mean_cloud_disturbance = -1
+            mean_cloud_disturbance = None
         yield name, total_ct, mean_cloud_disturbance
 
 
