@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial import distance
 
 
 class Node:
@@ -25,9 +26,9 @@ class Node:
                                 and [also difference between the former, but node load vector includes candidate shard]
         """
         ws = self.ws.copy()
-        x1 = np.linalg.norm(ws - nwts)
-        x2 = np.linalg.norm(ws + w - nwts)
-        return x1 - x2
+        x1 = distance.cityblock(ws, nwts)
+        x2 = distance.cityblock(ws + w, nwts)
+        return abs(x1 - x2)
 
     def shard_append(self, f: int, w: np.ndarray) -> None:
         """
@@ -47,7 +48,8 @@ class Node:
 
         :param numpy.ndarray nwts: Normalized load vector of a cloud
         """
-        if np.linalg.norm(self.ws) > np.linalg.norm(nwts):
+
+        if np.sum(np.abs(self.ws)) > np.sum(np.abs(nwts)):
             self.active = False
 
 
@@ -69,7 +71,7 @@ class SALP:
         self.shards_orig = shards
         self.wts = self.shards_orig.sum(axis=0)
         self.nwts = self.wts / n
-        self.cloud_disturbance = np.linalg.norm(self.wts - self.nwts)
+        self.cloud_disturbance = distance.cityblock(self.wts, self.nwts)
         self.lw = self.__sort_shards_by_module(self.shards_orig)
         self.nodes = [Node(e) for e in range(0, n)]
         if verbose:
@@ -92,7 +94,7 @@ class SALP:
         :param shards: Shards to be sorted
         :return: List of tuples[shard_id, shard_module], sorted in descending order by the value of shard module
         """
-        modules = [(i, np.linalg.norm(m)) for i, m in enumerate(shards)]
+        modules = [(i, np.sum(np.abs(m))) for i, m in enumerate(shards)]
         return sorted(modules, key=lambda x: x[1], reverse=True)
 
     def __arrange_shards(self, verbose) -> None:
