@@ -38,7 +38,7 @@ if __name__ == '__main__':
     cor_range = np.arange(0.0, 1.01, 0.05)
     load_range = np.arange(0.7, 0.91, 0.05)
     size = 100
-    repeats = 10
+    repeats = 100
 
     scales = (4, 8)
     means = (8,16)
