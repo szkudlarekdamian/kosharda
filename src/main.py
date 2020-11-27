@@ -38,15 +38,21 @@ if __name__ == '__main__':
     cor_range = np.arange(0.0, 1.01, 0.05)
     load_range = np.arange(0.7, 0.91, 0.05)
     size = 100
-    repeats = 100
-    rng = (2, 4)
+    repeats = 10
+
+    scales = (4, 8)
+    means = (8,16)
+    stds = (1,2)
 
 
     def gamma_generator_factory(cor):
-        return ga.Generator(F, size, cor, rng)
+        return ga.Generator(F, size, cor, scales)
+
+    def normal_generator_factory(cor):
+        return mn.Generator2(F, size, cor, means, stds)
 
 
     gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
     df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value', 'disturbance'])
 
-    df.to_csv('../results/N{}-F{}-S{}-R{}-result-v3.csv'.format(N, F, size, repeats), index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result-v6.csv'.format(N, F, size, repeats), index=False)
