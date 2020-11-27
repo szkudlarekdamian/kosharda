@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.spatial import distance
 
 
 class Node:
@@ -15,7 +14,7 @@ class Node:
     def __init__(self, identity: int, active: bool = True) -> None:
         self.identity = identity
         self.active = active
-        self.fs = np.array([], dtype=int)
+        # self.fs = np.array([], dtype=int)
         self.ws = np.array([0], dtype=float)
 
     def get_modules_difference(self, w: np.ndarray, nwts: np.ndarray) -> np.ndarray:
@@ -25,9 +24,9 @@ class Node:
         :return numpy.ndarray: Difference between modules of [difference between node load vector and normalized cloud load vector]
                                 and [also difference between the former, but node load vector includes candidate shard]
         """
-        ws = self.ws.copy()
-        x1 = distance.cityblock(ws, nwts)
-        x2 = distance.cityblock(ws + w, nwts)
+        # ws = self.ws.copy()
+        x1 = np.sum(np.abs((self.ws - nwts)))
+        x2 = np.sum(np.abs((self.ws + w - nwts)))
         return abs(x1 - x2)
 
     def shard_append(self, f: int, w: np.ndarray) -> None:
@@ -38,7 +37,7 @@ class Node:
         :param int f: ID of an appended shard
         :param numpy.ndarray w: Load vector of an appended shard
         """
-        self.fs = np.append(self.fs, f)
+        # self.fs = np.append(self.fs, f)
         self.ws.resize(w.shape)
         self.ws += w
 
@@ -49,7 +48,7 @@ class Node:
         :param numpy.ndarray nwts: Normalized load vector of a cloud
         """
 
-        if np.sum(np.abs(self.ws)) > np.sum(np.abs(nwts)):
+        if np.sum(np.abs(self.ws)) >= np.sum(np.abs(nwts)):
             self.active = False
 
 
@@ -71,7 +70,7 @@ class SALP:
         self.shards_orig = shards
         self.wts = self.shards_orig.sum(axis=0)
         self.nwts = self.wts / n
-        self.cloud_disturbance = distance.cityblock(self.wts, self.nwts)
+        self.cloud_disturbance = np.sum(np.abs(self.wts - self.nwts))
         self.lw = self.__sort_shards_by_module(self.shards_orig)
         self.nodes = [Node(e) for e in range(0, n)]
         if verbose:
@@ -134,10 +133,10 @@ class SALP:
             print("----------------FINAL NODES----------------")
             for node in self.nodes:
                 print("Node: {}\n"
-                      "\tShards assigned [FS]: {}\n"
+                    #   "\tShards assigned [FS]: {}\n"
                       "\tLoad of node [WS]: {}\n"
                       .format(node.identity,
-                              node.fs,
+                            #   node.fs,
                               node.ws))
 
 
