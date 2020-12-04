@@ -45,14 +45,14 @@ if __name__ == '__main__':
     stds = (1,2)
 
 
-    def gamma_generator_factory(cor):
-        return ga.Generator(F, size, cor, scales)
+    def gamma_generator_factory(cor: float, seed: float = None):
+        return ga.Generator(F, size, cor, scales, seed=seed)
 
-    def normal_generator_factory(cor):
-        return mn.Generator2(F, size, cor, means, stds)
+    def normal_generator_factory(cor: float, seed: float = None):
+        return mn.Generator2(F, size, cor, means, stds, seed=seed)
 
 
     gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
-    df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value', 'disturbance'])
+    df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value', 'disturbance', 'actual_load'])
 
-    df.to_csv('results/N{}-F{}-S{}-R{}-result-v6.csv'.format(N, F, size, repeats), index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result-v7.csv'.format(N, F, size, repeats), index=False)
