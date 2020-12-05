@@ -51,12 +51,12 @@ def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, C
 def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range: List[float], 
              generator_factory: Callable[[float, float], BaseGenerator], algorithms: List[Tuple[str, Callable]]):
     pbar = tqdm(total=repeats * len(cor_range) * len(load_range))
-    sed = 0 # random seed for generators
+    # sed = 0 # random seed for generators
     for cor in cor_range:
         for ro in load_range:
-            for _ in range(repeats):
+            for rpt in range(repeats):
                 # print(cor, ro, sed)
-                generator = generator_factory(cor, sed)
+                generator = generator_factory(cor, rpt) # pass repeat number as seed
         
                 estimated_load = generator.get_estimated_cloud_load()
                 estimated_node_load = estimated_load/size/N
@@ -70,7 +70,7 @@ def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range
                     yield (cor, ro) + res + (act_load, )
 
                 pbar.update(1) # update progress bar
-                sed += 1 # increment the random seed
+                # sed += 1 # increment the random seed
     pbar.close()
 
 
