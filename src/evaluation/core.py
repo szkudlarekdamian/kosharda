@@ -6,34 +6,45 @@ import numpy as np
 from tqdm import tqdm
 
 
-def calculate_total_node_queueing_time(n: Node, power: float) -> float:
-    stb = np.mean(n.ws)/power
-    assert stb < 1, "Node {} is not stable".format(n.identity)
-    coeff = stb/(1-stb)
-    return coeff * np.sum(n.ws)
-
-
-def calculate_all_nodes_queueing_time(nodes: List[Node], power: float) -> float:
-    total_ct = 0
-    for n in nodes:
-        ct = calculate_total_node_queueing_time(n, power)
-        total_ct += ct
-    return total_ct
+def balance_matrix(mat: np.ndarray, power: float, thr: float = 0.95) -> np.ndarray:
+    mx_lvls = np.zeros(mat.shape) + (power*thr)
+    while(np.any(mat > mx_lvls)):
+        dfs = mat - mx_lvls
+        dfs[dfs<0] = 0
+        mat = mat - dfs
+        dfs = np.roll(dfs, 1, axis=1)
+        mat = mat + dfs
+    return mat
 
 
 def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, Callable]], load_vectors: np.ndarray, nwts: np.ndarray):
     for name, func in algorithms:
         cloud = func(N, load_vectors)
-        try:
-            total_ct = calculate_all_nodes_queueing_time(cloud.nodes, node_power)
-        except AssertionError:
-            total_ct = None
-        try:
-            nws = np.array(list(map(lambda x: x.ws, cloud.nodes)))
-            mean_cloud_disturbance = np.mean(np.abs((nws - nwts)/nwts)) #średni znormalizowany disturbance z dystansu manhattana
-            # mean_cloud_disturbance = (np.mean([np.linalg.norm(n.ws - nwts) for n in cloud.nodes]))
-        except ArithmeticError:
-            mean_cloud_disturbance = None
+        nws = np.array(list(map(lambda x: x.ws, cloud.nodes)))
+
+        mean_cloud_disturbance = np.mean(np.abs((nws - nwts)/nwts))
+
+         # check if all nodes stable before balance
+        means = np.mean(nws, axis=1)
+
+        blnc_thr = 0.95 # set default balancing threshold
+
+        if np.any(means/node_power >= 0.99):  # at least one node is (almost) unstable
+            # print('oh shit', name, np.max(means/node_power))
+            yield name, None, mean_cloud_disturbance # return None value for total_ct
+            continue
+        elif np.any(means/node_power > blnc_thr):  # eventually elevate threshold
+            blnc_thr = 0.99
+            # print('close', name, np.max(means/node_power))
+
+        nws = balance_matrix(nws, node_power, thr = blnc_thr)
+
+        pwr_mat = np.zeros(nws.shape) + node_power
+        stb_mat = nws/pwr_mat
+        cff_mat = stb_mat/(1-stb_mat)
+        total_ct = np.mean(cff_mat)
+        
+        
         yield name, total_ct, mean_cloud_disturbance
 
 
@@ -44,6 +55,7 @@ def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range
     for cor in cor_range:
         for ro in load_range:
             for _ in range(repeats):
+                # print(cor, ro, sed)
                 generator = generator_factory(cor, sed)
         
                 estimated_load = generator.get_estimated_cloud_load()
@@ -60,3 +72,38 @@ def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range
                 pbar.update(1) # update progress bar
                 sed += 1 # increment the random seed
     pbar.close()
+
+
+if __name__ == '__main__':
+    x1 = np.array([
+        [0,1,2], 
+        [3,4,5]
+        ])
+    x2 = np.array([
+        [2,0,1], 
+        [5,3,4]
+        ])
+    assert np.all(x2 == np.roll(x1, 1, axis=1))
+
+    p1 = np.array([
+        [9,0],
+        [0,9]
+    ])
+    pwr = 5
+    thr = 0.95
+    p2 = balance_matrix(p1, pwr, thr)
+
+    expected = np.array([
+        [thr*pwr, 9 - thr*pwr],
+        [9 - pwr*thr, thr*pwr]
+    ])
+    assert np.all(p2 == expected)
+
+    p3 = np.array([
+        [9, 4, 0],
+        [0, 9, 4]
+    ])
+
+    p4 = balance_matrix(p3, pwr, thr)
+    assert np.all(p4 <= thr*pwr)
+    assert np.sum(p3) == np.sum(p4)
