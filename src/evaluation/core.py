@@ -26,24 +26,18 @@ def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, C
 
          # check if all nodes stable before balance
         means = np.mean(nws, axis=1)
+        stb_vec = means/node_power
 
-        blnc_thr = 0.95 # set default balancing threshold
-
-        if np.any(means/node_power >= 0.99):  # at least one node is (almost) unstable
+        if np.any(stb_vec >= 0.99):  # at least one node is (almost) unstable
             # print('oh shit', name, np.max(means/node_power))
             yield name, None, mean_cloud_disturbance # return None value for total_ct
             continue
-        elif np.any(means/node_power > blnc_thr):  # eventually elevate threshold
-            blnc_thr = 0.99
-            # print('close', name, np.max(means/node_power))
 
-        nws = balance_matrix(nws, node_power, thr = blnc_thr)
+        cff_vec = stb_vec/(1-stb_vec)
+        vars = np.var(nws, axis=1)
+        tq_vec = vars/(means ** 2)
 
-        pwr_mat = np.zeros(nws.shape) + node_power
-        stb_mat = nws/pwr_mat
-        cff_mat = stb_mat/(1-stb_mat)
-        total_ct = np.mean(cff_mat)
-        
+        total_ct = np.sum(tq_vec * cff_vec)
         
         yield name, total_ct, mean_cloud_disturbance
 

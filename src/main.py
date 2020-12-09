@@ -55,4 +55,4 @@ if __name__ == '__main__':
     gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
     df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value', 'disturbance', 'actual_load'])
 
-    df.to_csv('results/N{}-F{}-S{}-R{}-result-v8.csv'.format(N, F, size, repeats), index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result-v9.csv'.format(N, F, size, repeats), index=False)
