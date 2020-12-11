@@ -5,6 +5,8 @@ from typing import Tuple, List, Callable
 import numpy as np
 from tqdm import tqdm
 
+from numba import njit
+
 
 def balance_matrix(mat: np.ndarray, power: float, thr: float = 0.95) -> np.ndarray:
     mx_lvls = np.zeros(mat.shape) + (power*thr)
@@ -17,54 +19,60 @@ def balance_matrix(mat: np.ndarray, power: float, thr: float = 0.95) -> np.ndarr
     return mat
 
 
-def evaluate_algorithms(N: int, node_power: float, algorithms: List[Tuple[str, Callable]], load_vectors: np.ndarray, nwts: np.ndarray):
-    for name, func in algorithms:
-        cloud = func(N, load_vectors)
-        nws = np.array(list(map(lambda x: x.ws, cloud.nodes)))
+def get_node_vectors(N: int, load_vectors: np.ndarray, func: Callable) -> np.ndarray:
+    cloud = func(N, load_vectors)
+    return np.array(list(map(lambda x: x.ws, cloud.nodes)))
 
-        mean_cloud_disturbance = np.mean(np.abs((nws - nwts)/nwts))
 
-         # check if all nodes stable before balance
-        means = np.mean(nws, axis=1)
-        stb_vec = means/node_power
+def evaluate_algorithm(node_power: float, nws: np.ndarray, nwts: np.ndarray) -> Tuple:
+    mean_cloud_disturbance = np.mean(np.abs((nws - nwts)/nwts))
 
-        if np.any(stb_vec >= 0.99):  # at least one node is (almost) unstable
-            # print('oh shit', name, np.max(means/node_power))
-            yield name, None, mean_cloud_disturbance # return None value for total_ct
-            continue
+    # check if all nodes stable before balance
+    means = np.mean(nws, axis=1)
+    stb_vec = means/node_power
 
-        cff_vec = stb_vec/(1-stb_vec)
-        vars = np.var(nws, axis=1)
-        tq_vec = vars/(means ** 2)
+    vars = np.var(nws, axis=1)
+    ca_vec = vars/(means ** 2)
+    m_ca = np.mean(ca_vec)
 
-        total_ct = np.sum(tq_vec * cff_vec)
+    if np.any(stb_vec >= 0.99):  # at least one node is (almost) unstable
+        # return None value for ct_vX
+        return None, None, mean_cloud_disturbance, m_ca
+
+    cff_vec = stb_vec/(1-stb_vec)
+    sum_vec = np.sum(nws, axis=1)
+
+    ct_v1 = np.sum(cff_vec * sum_vec)
+    ct_v2 = np.sum((ca_vec/2) * cff_vec * sum_vec)
         
-        yield name, total_ct, mean_cloud_disturbance
+    return ct_v1, ct_v2, mean_cloud_disturbance, m_ca
 
 
 def pipeline(N: int, size: int, repeats: int, cor_range: List[float], load_range: List[float], 
              generator_factory: Callable[[float, float], BaseGenerator], algorithms: List[Tuple[str, Callable]]):
-    pbar = tqdm(total=repeats * len(cor_range) * len(load_range))
-    # sed = 0 # random seed for generators
+    pbar = tqdm(total=repeats * len(cor_range))
     for cor in cor_range:
-        for ro in load_range:
-            for rpt in range(repeats):
-                # print(cor, ro, sed)
-                generator = generator_factory(cor, rpt) # pass repeat number as seed
-        
-                estimated_load = generator.get_estimated_cloud_load()
-                estimated_node_load = estimated_load/size/N
-                node_power = estimated_node_load/ro
+        for rpt in range(repeats):
+            generator = generator_factory(cor, rpt) # pass repeat number as seed
 
-                load_vectors = generator.generate_cloud_load_vectors()
-                nwts = load_vectors.sum(axis=0) / N
-                act_load = np.sum(load_vectors)
+            estimated_load = generator.get_estimated_cloud_load()
+            estimated_node_load = estimated_load/size/N
 
-                for res in evaluate_algorithms(N, node_power, algorithms, load_vectors, nwts):
-                    yield (cor, ro) + res + (act_load, )
+            load_vectors = generator.generate_cloud_load_vectors()
+            nwts = load_vectors.sum(axis=0) / N
+            act_load = np.sum(load_vectors)
 
-                pbar.update(1) # update progress bar
-                # sed += 1 # increment the random seed
+            for name, func in algorithms:
+                nws = get_node_vectors(N, load_vectors, func)
+
+                for ro in load_range:
+                    node_power = estimated_node_load/ro
+
+                    res = evaluate_algorithm(node_power, nws, nwts)
+
+                    yield (cor, ro, name) + res + (act_load, )
+                    
+            pbar.update(1) # update progress bar
     pbar.close()
 
 

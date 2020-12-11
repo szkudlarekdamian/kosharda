@@ -40,7 +40,7 @@ if __name__ == '__main__':
     size = 100
     repeats = 100
 
-    scales = (4, 8)
+    scales = (2, 10)
     means = (8,16)
     stds = (1,2)
 
@@ -53,6 +53,6 @@ if __name__ == '__main__':
 
 
     gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
-    df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'value', 'disturbance', 'actual_load'])
+    df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'v1', 'v2', 'disturbance', 'mean_ca', 'actual_load'])
 
-    df.to_csv('results/N{}-F{}-S{}-R{}-result-v9.csv'.format(N, F, size, repeats), index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result-v11.csv'.format(N, F, size, repeats), index=False)
