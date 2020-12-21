@@ -85,6 +85,59 @@ def generate_cov_mat2(cor: float, n: int) -> np.ndarray:
         res[i][i] = 1.0
     return res
 
+
+class Generator2(BaseGenerator):
+    """
+    This is generator utilizes gamma distribution to generate load correlated vectors with gamma distribution
+    ref: https://en.wikipedia.org/wiki/Gamma_distribution
+    """
+    
+    def __init__(self, n: int, s: int, cor: float, scale: float = 4, shape: float = 2.0, seed: float = None) -> None:
+        self.num = n
+        self.size = s
+        self.generator = np.random.default_rng(seed)
+        # self.r_start, self.r_end = scals_range
+        self.shape = shape
+        self.scale = scale
+
+        cor = cor if cor < 1 else cor - 10**-8
+        # self.cov_mat = [[1.0 if i == j else cor for j in range(n)] for i in range(n)]
+        self.cov_mat = generate_cov_mat2(cor, n)
+
+        # self.trans_mat = np.linalg.cholesky(self.cov_mat)
+        self.trans_mat = do_cholesky(np.array(self.cov_mat))
+
+        # self.scales_vector = self.generator.uniform(self.r_start, self.r_end, size=self.num)
+        self.scales_vector = self.generator.gamma(scale=scale, shape=shape, size=self.num)
+
+        self.means_vector = self.scales_vector * shape
+        self.stds_vector = self.scales_vector * math.sqrt(shape)
+
+    def get_estimated_cloud_load(self) -> float:
+        return self.scale * self.shape * self.shape * self.num * self.size
+
+
+    def generate_cloud_load_vectors(self) -> np.ndarray:
+        mat = self.generator.gamma(scale=self.scales_vector, shape=self.shape, size=(self.size, self.num))
+
+        # normalize
+        # means = np.mean(mat, axis=0)
+        # stds = np.std(mat, axis=0)
+        # mat = (mat - means)/stds
+        mat = (mat - self.means_vector)/self.stds_vector
+
+        # transform
+        # mat = np.dot(self.trans_mat, mat.T).T
+        mat = do_dot(self.trans_mat, mat)
+
+        # denormalize
+        # mat = (mat * stds + means)
+        mat = (mat * self.stds_vector + self.means_vector)
+        mat[mat < 0] = 0
+
+        return mat.T
+
+
 if __name__ == '__main__':
     num = 1000
     size = 100

@@ -43,7 +43,7 @@ def evaluate_algorithm(node_power: float, nws: np.ndarray, nwts: np.ndarray) -> 
     sum_vec = np.sum(nws, axis=1)
 
     ct_v1 = np.sum(cff_vec * sum_vec)
-    ct_v2 = np.sum((ca_vec/2) * cff_vec * sum_vec)
+    ct_v2 = np.sum(((ca_vec + 1)/2) * cff_vec * sum_vec)
         
     return ct_v1, ct_v2, mean_cloud_disturbance, m_ca
 
