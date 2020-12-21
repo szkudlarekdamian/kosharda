@@ -1,5 +1,6 @@
 import src.generation.gamma as ga
 import src.generation.multivariate_normal as mn
+import src.generation.synthetic as sn
 
 from src.salp.salp import SALP
 
@@ -35,7 +36,8 @@ if __name__ == '__main__':
 
     N = 100
     F = 10 * N
-    cor_range = np.arange(0.0, 1.01, 0.05)
+    # cor_range = np.arange(0.0, 1.01, 0.05)
+    cor_range = [-1]
     load_range = np.arange(0.5, 0.91, 0.05)
     size = 100
     repeats = 100
@@ -53,8 +55,12 @@ if __name__ == '__main__':
     def normal_generator_factory(cor: float, seed: float = None):
         return mn.Generator2(F, size, cor, means, stds, seed=seed)
 
+    
+    def synth_generator_factory(cor: float, seed: float = None):
+        return sn.Generator(F, size, seed)
 
-    gen = pipeline(N, size, repeats, cor_range, load_range, gamma_generator_factory, algorithms)
+
+    gen = pipeline(N, size, repeats, cor_range, load_range, synth_generator_factory, algorithms)
     df = pd.DataFrame(gen, columns=['correlation', 'load', 'algorithm', 'v1', 'v2', 'disturbance', 'mean_ca', 'actual_load'])
 
-    df.to_csv('results/N{}-F{}-S{}-R{}-result-v12.csv'.format(N, F, size, repeats), index=False)
+    df.to_csv('results/N{}-F{}-S{}-R{}-result-v13.csv'.format(N, F, size, repeats), index=False)
