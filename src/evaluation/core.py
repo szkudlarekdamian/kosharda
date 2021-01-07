@@ -29,21 +29,50 @@ def evaluate_algorithm(node_power: float, nws: np.ndarray, nwts: np.ndarray) -> 
 
     # check if all nodes stable before balance
     means = np.mean(nws, axis=1)
-    stb_vec = means/node_power
+    p_i = means/node_power
 
     vars = np.var(nws, axis=1)
-    ca_vec = vars/(means ** 2)
-    m_ca = np.mean(ca_vec)
+    ca_i = np.sqrt(vars/(means ** 2))
+    cs_i = .5
+    m_ca = np.mean(ca_i)
 
-    if np.any(stb_vec >= 0.99):  # at least one node is (almost) unstable
+    if np.any(p_i >= 0.99):  # at least one node is (almost) unstable
         # return None value for ct_vX
         return None, None, mean_cloud_disturbance, m_ca
 
-    cff_vec = stb_vec/(1-stb_vec)
+    cff_vec = p_i/(1-p_i)
     sum_vec = np.sum(nws, axis=1)
 
     ct_v1 = np.sum(cff_vec * sum_vec)
-    ct_v2 = np.sum(((ca_vec + 1)/2) * cff_vec * sum_vec)
+    # ct_v2 = np.sum(((ca_i**2 + 1)/2) * cff_vec * sum_vec)
+    ct_v2 = 0
+
+    cnws = nws.copy()
+    
+    dt = 1
+    es = .1
+    rows, cols = cnws.shape
+    for j in range(cols):
+        p_ij = cnws[:,j]/node_power
+        ca_ij = (p_ij/p_i) * ca_i
+        cs_ij = (p_ij/p_i) * cs_i
+        pl_ij = dt / ((ca_ij ** 2 + cs_ij **2) * es + dt)
+        for i in range(rows):
+            p = p_i[i]
+            pl = pl_ij[i]
+            if p < pl:
+                ct_v2 += (p/(1-p)) * ((ca_ij[i] ** 2 + cs_ij[i] **2)/2) * es
+            else:
+                ct_v2 += .5 * dt
+
+            if p > pl:
+                mv = cnws[i,j] - pl*node_power
+                if j < cols-1:
+                    cnws[i, j+1] += mv
+                else:
+                    # print('Trying to do out of boundary move')
+                    pass
+        
         
     return ct_v1, ct_v2, mean_cloud_disturbance, m_ca
 
@@ -109,3 +138,15 @@ if __name__ == '__main__':
     p4 = balance_matrix(p3, pwr, thr)
     assert np.all(p4 <= thr*pwr)
     assert np.sum(p3) == np.sum(p4)
+
+    x1 = np.array([
+        [2,3,2], 
+        [3,2,3]
+    ])
+
+    print(x1.shape)
+
+    print(
+        evaluate_algorithm(4, x1, np.array([2,2,2]))
+    )
+
