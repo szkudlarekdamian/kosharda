@@ -141,3 +141,6 @@ dmypy.json
 # images
 *.png
 *.svg
+
+# html reports
+*.html
