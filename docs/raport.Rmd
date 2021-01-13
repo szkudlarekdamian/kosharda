@@ -33,57 +33,57 @@ library(DT)
 ### BestFit (BF)
 Algorytm redukuje problem alokacji shardów do problemu szeregowania P || Cmax.
 Węzły są traktowane jako równoległe maszyny, shardy jako niepodzielne zadania, wektor obciążenia shardu jest redukowany do średniej jego elementów, ta średnia jest długością trwania zadania.
-Kolejne shardy (posortowane malejąco) są przydzielane do węzłów metodą Best Fit, tj. shard jest przydzielany do węzła, dla którego po przydziale pozostanie najmniej wolnego miejsca, dopóki jest wolne miejsce na węźle.
+
+
+Metoda BestFit w każdej iteracji dodaje shard do węzła, w taki sposób, aby pozostawić jak najmniej wolnego miejsca,
+dopóki wolne miejsce jest i shard się mieści  na węzeł. Po zapełnieniu węzła, algorytm przechodzi do kolejnego. 
+Ewentualne nie przydzielone shardy są przydzielane kolejno na węzły o najmniejszym obciążeniu.
+
 
 ### RoundRobin (RR)
-Podejście naiwne - przydział losowy.
+Podejście naiwne - zadań na węzły po kolei, algorytmem Round Robin, bez uprzedniego szeregowania węzłów.
 
 ### SALP
-Algorytm pierwotnej alokacji shardów – SALP (Shards Allocation based on Load Prediction).
+Algorytm pierwotnej alokacji shardów – SALP (Shards Allocation based on Load Prediction) - zgodnie ze specyfikacją.
 
-```{r}
-df <- read.csv(file = 'F:/Studia/Pracowania badawczo-problemowa/kosharda/results/N100-F1000-S100-R100-result-v14.csv') %>% mutate(algorithm = factor(algorithm)) %>% select(-v1) %>% rename(value=v2)
-df_rounded <- df %>% mutate(across(where(is.numeric), ~ round(., 2)))
-```
+# Metodologia przeprowadzenia eksperymentu
+
+W przypadku danych wygenerowanych z rozkładu gamma, dla każdej wartośći współczynnika korelacji z zakresu <0;1> z krokiem 0.05 wygenerowano po 100 różnych zestawów danych, razem 2100 zestawów. Dla każdej generacji, wartość ziarna generatorów liczb losowych była ustalona jako numer powtórzenia, czyli kolejne liczby z zakresu <0;99> (w celu zapewnienia powtarzalności).
+
+W przypadku danych generowanych według "Nowego modelu obciążenia", ze względu na bark dodatkowej parametryzacji, wygenerowano jedynie 100 razy ten sam zestaw danych, za każdym razem zmieniając ziarno generatora liczb losowych, analogicznie do sposobu opisanego powyżej.
+
+Po uzyskaniu wszystkich zestawów danych, uruchamiano na nich algorytmy w celu uzyskania przydziału shardów do węzłów, a następnie wyliczano wekotry obciążenia węzłów. W przypadku danych generowanych z rozkładu gamma, uzyskano łącznie 6300 zestawów obciążeń węzłów, a w drugim wypadku analogicznie 300 zestawów.
+
+Kolejnym krokiem była ewaluacja obciążeń węzłów, dla każdego zestawu i kazdej z zadanych wartości współczynnika obciążenia (zakres <0.5; 0.9> krok 0.05), wyliczane były miary według zadanych wzorów.
+
+Niezmienność danych była uzyskiwana poprzez kopiowanie rezultatów uzyskanych przez algorytmy, w przypadku gdy do wektorów obciążeń węzłów były wprowadzanae zmiany, np. gdy była wymagana alokacja nadmiarowego obciążenia.
+
+Kopiowanie uzyskanych rezultatów okazało się być bardziej efektywne niż generacja i powtórne szeregowanie takiego samego zestawu danych, co pozwoliło znacząco skrócić czas trwania symulacji.
 
 # Wyniki eksperymentu
 
-### Parametry
-Eksperyment charakteryzował się następującymi parametrami:
+Niniejsza sekcja zawiera wykresy prezentujące dane, uzyskane podczas przeprowadzonych symulacji. 
 
-* Liczba powtórzeń eksperymentu: 100
-* Liczba węzłów: 100
-* Liczba shardów: 1000
-* Rozmiar wektora obciążenia: 100
-<br/>
-<br/>
+## Dane generowane z rozkładu Gamma
 
+```{r}
+df <- read.csv(file = '../results/N100-F1000-S100-R100-result-v14.csv') %>% mutate(algorithm = factor(algorithm)) %>% select(-v1) %>% rename(value=v2)
+df_rounded <- df %>% mutate(across(where(is.numeric), ~ round(., 2)))
+```
 
-<!-- ### Uwagi -->
-<!-- Sumaryczne opóźnienie wszystkich zadań dla danego węzła będzie równe: -->
-
-<!-- $$ -->
-<!-- T_{Q,i,sum} = E[S_i] * M_i * \frac{p_i}{1-p_i} * \frac{C^2_{a,i}}{2} -->
-<!-- $$ -->
-
-<!-- gdzie:  -->
-
-<!-- * $E[S_i]$ jest średnią wielkością zadańna danym węźle *i*, -->
-<!-- * $p_i$ jest obciążeniem węzła *i*, -->
-<!-- * $C_a$ to współczynnik zmienności składowych wektora obciążenia danego węzła *i*, -->
-<!-- * $M_i$ jest liczbą wszystkich zadań, -->
-<!-- * $E[S_i]*M_i$ reprezentuje sumaryczną pracę do wykonania przedłożoną chmurze, czyli jest on równy sumie składowych wektora obciążenia węzła *i*. -->
 
 ### Czas opóźnień, a korelacja
 
 Poniższy wykres jest zbiorczy dla wszystkich obciążeń. Osie są stałe, aby umożliwić porównanie zmiany w czasie oczekiwania przy różnych stopniach obciążenia węzłów i współczynnikach korelacji.
 
-```{r fig.width=10, fig.height=25}
-waitT <- df_rounded %>% group_by(algorithm, correlation, load) %>% mutate(mean_waiting_time = median(value, na.rm = TRUE)) %>% rename(`obciążenie`=`load`) %>% ungroup() %>% select(-(4:7)) %>%  distinct()
+```{r fig.width=10, fig.height=15}
+waitT <- df_rounded %>% 
+  group_by(algorithm, correlation, load) %>% 
+  mutate(mean_waiting_time = median(value, na.rm = TRUE)) %>% 
+  rename(`obciążenie`=`load`) %>% ungroup() %>% 
+  select(-(4:7)) %>%  distinct()
 
-datatable(df_rounded %>% group_by(algorithm, correlation, load) %>% mutate(waiting_time = median(value, na.rm = TRUE)) %>% ungroup() %>% select(-(4:7)) %>%  distinct() %>% spread(algorithm,waiting_time) %>%mutate_all(formatC,format='f', digits=2), caption = "Tabela zestawiająca współczynnik korelacji, obciążenie węzła i czas opóźnienia dla rozpatrywanych algorytmów.")
-
-waitT %>%
+waitT %>% filter(`obciążenie` <= 0.7) %>%
 ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
   geom_line(size=1)+
   facet_wrap(`obciążenie`~.,  labeller = label_both, ncol=1)+
@@ -93,56 +93,38 @@ ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
         # panel.spacing.y = unit(0.5, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
-  labs(x="współczynnik korelacji", y="sumaryczny czas opóźnienia", colour="algorytm", title = "Sumaryczny czas opóźnień na węzłach w zależności od współczynnika korelacji")
+  labs(x="współczynnik korelacji", 
+       y="sumaryczny czas opóźnienia", 
+       colour="algorytm", 
+       title = "Sumaryczny czas opóźnień na węzłach w zależności od współczynnika korelacji")
 ```
 
-<br/>
-<br/>
+Dla wartości obciążenia większych niż `0.7` przedstawiono zależności na osobnych wykresach.
 
-Następne dwa wykresy przedstawiają te same zależności, ale oś Y ma zmienny zakres, aby przedstawić mniej spłaszczone kształty krzywych (w porównaniu do wykresu zbiorczego).
-
-<br/>
-<br/>
-
-```{r fig.width=10, fig.height=18}
-waitT %>% filter(`obciążenie`<0.80)%>%
+```{r fig.width=10, fig.height=10}
+waitT %>% filter(`obciążenie` > 0.7) %>% filter(correlation < 0.3) %>%
 ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
-  geom_line(size=1.3)+
-  # geom_point(size=3)+
+  geom_line(size=1)+
   facet_wrap(`obciążenie`~.,  labeller = label_both, ncol=1)+
   theme(text=element_text(size=14),
+        axis.text=element_text(size=8),
         panel.grid.major  = element_line(colour="grey60"),
-        panel.spacing.y = unit(1, "lines"),
+        # panel.spacing.y = unit(0.5, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
-  labs(x="współczynnik korelacji", y="sumaryczny czas opóźnienia", colour="algorytm", title = "Sumaryczny czas opóźnień na węzłach w zależności od współczynnika korelacji")
+  labs(x="współczynnik korelacji", 
+       y="sumaryczny czas opóźnienia", 
+       colour="algorytm", 
+       title = "Sumaryczny czas opóźnień na węzłach w zależności od współczynnika korelacji")
 ```
 
-```{r fig.width=10, fig.height=9}
-waitT %>% filter(`obciążenie`>=0.80)%>%
-  ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
-  # geom_smooth(size=1.3)+
-  geom_line(size=1.3)+
-  # geom_point(size=3)+
-  facet_wrap(`obciążenie`~.,  labeller = label_both, ncol=1)+
-  theme(text=element_text(size=14),
-        panel.grid.major  = element_line(colour="grey60"),
-        panel.spacing.y = unit(1, "lines"),
-        plot.title = element_text(hjust = 0.5),
-        legend.position = "right")+
-  labs(x="współczynnik korelacji", y="sumaryczny czas opóźnienia", colour="algorytm", title = "Sumaryczny czas opóźnień na węzłach w zależności od współczynnika korelacji")
-
-```
-<br/>
-<br/>
 
 ### Czas opóźnień, a obciążenie
 
+Poniższe wykresy są uzupełnieniem do poprzedniej sekcji, pokazują zmianę czasu opóźnienia, w stosunku do obciążenia dla wybranych wartości korelacji.
+
 ```{r fig.width=10, fig.height=15}
 corrs <- c(0,.25,.5,.75,1)
-
-# datatable(df_rounded %>% filter(correlation %in% corrs) %>% select(correlation, load, algorithm, value) %>% rename(waiting_time=value)%>% group_by(algorithm,correlation, load) %>% summarise_all(mean) %>% spread(algorithm, waiting_time)
-#           , caption = "Tabela zestawiająca współczynnik korelacji, obciążenie węzła i czas opóźnienia dla rozpatrywanych algorytmów.")
 
 waitT %>% filter(correlation %in% corrs)%>% rename(`współczynnik korelacji`=correlation) %>%
   ggplot(aes(x=`obciążenie`, y=mean_waiting_time, colour=algorithm)) +
@@ -155,19 +137,18 @@ waitT %>% filter(correlation %in% corrs)%>% rename(`współczynnik korelacji`=co
         panel.spacing.y = unit(1, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
-  labs(x="obciążenie", y="sumaryczny czas opóźnienia", colour="algorytm", title = "Sumaryczny czas opóźnień na węzłach w zależności od ich obciążenia")
+  labs(x="obciążenie", 
+       y="sumaryczny czas opóźnienia", colour="algorytm", 
+       title = "Sumaryczny czas opóźnień na węzłach w zależności od ich obciążenia")
 ```
 
 
-<br/>
-<br/>
-
 ### Niezrównoważenie obciążenia, a korelacja
+
+Kolejny wykres prezentuje niezrównoważenie w zależności od współczynnika korelacji.
 
 ```{r fig.width=10, fig.height=5}
 disturb <- df %>% group_by(algorithm, correlation) %>% mutate(disturbance = mean(disturbance, na.rm = TRUE)) %>% ungroup() %>% select(correlation, algorithm, disturbance)  %>%  distinct() 
-
-datatable(disturb %>% mutate(correlation = formatC(correlation, format='f', digits=2),disturbance = formatC(disturbance, format='f', digits=4)) %>% spread(algorithm, disturbance), caption="")
 
 disturb %>%
 ggplot(aes(x=correlation, y=disturbance, colour=algorithm)) +
@@ -178,21 +159,17 @@ ggplot(aes(x=correlation, y=disturbance, colour=algorithm)) +
         # panel.spacing.y = unit(0.5, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
-  labs(x="współczynnik korelacji", y="względne niezrównoważenie obciążenia", colour="algorytm", title = "Względne niezrównoważenie obciążenia chmury w zależności od współczynnika korelacji")
+  labs(x="współczynnik korelacji", 
+       y="względne niezrównoważenie obciążenia", colour="algorytm", 
+       title = "Względne niezrównoważenie obciążenia chmury w zależności od współczynnika korelacji")
 ```
 <br/>
 <br/>
 
 ### Obciążenie chmury, a korelacja
 
+Poniższy wykres dotyczy generowanych danych, linia ciągła prezentuje średnie sumaryczne obciążenie chmury, a prosta linia przerywana to wartość estymowana na podstawie parametrów generacji.
 
-```{r}
-datatable(
-  df_rounded %>% select(correlation, actual_load) %>% group_by(correlation) %>% summarise_all(mean) %>% distinct() %>%mutate_all(formatC,format='f', digits=2)
-            , caption = "Tabela zestawiająca współczynnik korelacji, obciążenie węzła i obciążenie chmury.")
-
-
-```
 
 ```{r fig.width=10, fig.height=5}
 actLoads <- df %>% group_by(correlation) %>% mutate(actual_load = mean(actual_load, na.rm = TRUE)) %>% ungroup() %>% select(correlation, actual_load) %>%  distinct()
@@ -209,13 +186,18 @@ ggplot(aes(x=correlation, y=actual_load, colour="rzeczywiste")) +
         # panel.spacing.y = unit(0.5, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
-  labs(x="współczynnik korelacji", y="obciążenie chmury", colour="", title = "Obciążenie chmury w zależności od współczynnika korelacji")
+  labs(x="współczynnik korelacji", 
+       y="obciążenie chmury", 
+       colour="", 
+       title = "Obciążenie chmury w zależności od współczynnika korelacji")
 ```
 
 ### Współczynnik zmienności częstości przedkładania zadań, a korelacja
 
+Poniższy wykres wskazuje na powiązanie wartości zmienności częstości przedkładania zadań, z wartością współczynnika korelacji.
+
 ```{r fig.width=11, fig.height=8}
-datatable(df_rounded %>% group_by(algorithm, correlation) %>% mutate(mean_ca = mean(mean_ca, na.rm = TRUE)) %>% ungroup() %>% select(algorithm, correlation, mean_ca) %>%  distinct() %>% spread(algorithm, mean_ca) %>%mutate_all(formatC,format='f', digits=5) %>% mutate(correlation = formatC(correlation, format='f', digits=2)), caption = "Tabela zestawiająca współczynnik korelacji i zmienności częstości przedkładania zadań dla rozpatrywanych algorytmów.")
+
 
 df_rounded %>% group_by(algorithm, correlation) %>% mutate(mean_ca = mean(mean_ca, na.rm = TRUE)) %>% ungroup() %>% select(algorithm, correlation, mean_ca) %>%  distinct() %>%
 ggplot(aes(x=correlation, y=mean_ca, colour=algorithm)) +
@@ -226,6 +208,35 @@ ggplot(aes(x=correlation, y=mean_ca, colour=algorithm)) +
         # panel.spacing.y = unit(0.5, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
-  labs(x="współczynnik korelacji", y="zmiennośc częstości przedkładania zadań", colour="algorytm", title = "Współczynnik zmienności częstości przedkładania zadań w zależności od współczynnika korelacji")
+  labs(x="współczynnik korelacji", 
+       y="zmiennośc częstości przedkładania zadań", 
+       colour="algorytm", 
+       title = "Współczynnik zmienności częstości przedkładania zadań w zależności od współczynnika korelacji")
 ```
 
+## Dane generowane według "Nowego modelu obciążenia"
+
+W tej sekcji przedstawione są wyniki dodatkowego eksperymentu, w którym dane były generowane według "nowego modelu obciążeń" (opisanego w jednej z wersji opisu problemu). W związku z tym, że dla tak generowanych danych, proces nie uwzględniał zmiany współczynnika korelacji, wystarczy przedstawic jedynie zależność czasu opóźnienia od obciążenia.
+
+```{r}
+df <- read.csv(file = '../results/N100-F1000-S100-R100-result-v15.csv') %>% 
+  mutate(algorithm = factor(algorithm)) %>% 
+  select(-v1) %>% select(-correlation) %>%
+  rename(value=v2)
+df_rounded <- df %>% mutate(across(where(is.numeric), ~ round(., 2)))
+```
+
+```{r fig.width=10}
+df %>% group_by(algorithm, load) %>% 
+  mutate(mean_waiting_time = median(value, na.rm = TRUE)) %>% 
+  ggplot(aes(x=load, y=mean_waiting_time, colour=algorithm)) + geom_line(size=1) +
+  theme(text=element_text(size=14),
+        axis.text=element_text(size=8),
+        panel.grid.major  = element_line(colour="grey60"),
+        # panel.spacing.y = unit(0.5, "lines"),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "right")+
+  labs(x="obciążenie", 
+       y="mediana czasu opóżnień", colour="algorytm", 
+       title = "Czas opóżnień w zależności od obciążenia")
+```
