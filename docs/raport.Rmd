@@ -32,16 +32,17 @@ library(DT)
 # Algorytmy przydziału
 ### BestFit (BF)
 Algorytm redukuje problem alokacji shardów do problemu szeregowania P || Cmax.
+
 Węzły są traktowane jako równoległe maszyny, shardy jako niepodzielne zadania, wektor obciążenia shardu jest redukowany do średniej jego elementów, ta średnia jest długością trwania zadania.
 
 
 Metoda BestFit w każdej iteracji dodaje shard do węzła, w taki sposób, aby pozostawić jak najmniej wolnego miejsca,
 dopóki wolne miejsce jest i shard się mieści  na węzeł. Po zapełnieniu węzła, algorytm przechodzi do kolejnego. 
-Ewentualne nie przydzielone shardy są przydzielane kolejno na węzły o najmniejszym obciążeniu.
+Ewentualne, nie przydzielone shardy są przydzielane kolejno na węzły o najmniejszym obciążeniu.
 
 
 ### RoundRobin (RR)
-Podejście naiwne - zadań na węzły po kolei, algorytmem Round Robin, bez uprzedniego szeregowania węzłów.
+Podejście naiwne - przydział zadań na węzły po kolei, algorytmem Round Robin, bez uprzedniego szeregowania węzłów.
 
 ### SALP
 Algorytm pierwotnej alokacji shardów – SALP (Shards Allocation based on Load Prediction) - zgodnie ze specyfikacją.
@@ -50,15 +51,15 @@ Algorytm pierwotnej alokacji shardów – SALP (Shards Allocation based on Load 
 
 W przypadku danych wygenerowanych z rozkładu gamma, dla każdej wartośći współczynnika korelacji z zakresu <0;1> z krokiem 0.05 wygenerowano po 100 różnych zestawów danych, razem 2100 zestawów. Dla każdej generacji, wartość ziarna generatorów liczb losowych była ustalona jako numer powtórzenia, czyli kolejne liczby z zakresu <0;99> (w celu zapewnienia powtarzalności).
 
-W przypadku danych generowanych według "Nowego modelu obciążenia", ze względu na bark dodatkowej parametryzacji, wygenerowano jedynie 100 razy ten sam zestaw danych, za każdym razem zmieniając ziarno generatora liczb losowych, analogicznie do sposobu opisanego powyżej.
+W przypadku danych generowanych według "Nowego modelu obciążenia", ze względu na brak dodatkowej parametryzacji, wygenerowano jedynie 100 razy ten sam zestaw danych, za każdym razem zmieniając ziarno generatora liczb losowych, analogicznie do sposobu opisanego powyżej.
 
-Po uzyskaniu wszystkich zestawów danych, uruchamiano na nich algorytmy w celu uzyskania przydziału shardów do węzłów, a następnie wyliczano wekotry obciążenia węzłów. W przypadku danych generowanych z rozkładu gamma, uzyskano łącznie 6300 zestawów obciążeń węzłów, a w drugim wypadku analogicznie 300 zestawów.
+Po uzyskaniu wszystkich zestawów danych, uruchamiano na nich algorytmy w celu uzyskania przydziału shardów do węzłów, a następnie wyliczano wektory obciążenia węzłów. W przypadku danych generowanych z rozkładu gamma, uzyskano łącznie 6300 zestawów obciążeń węzłów, a w drugim wypadku analogicznie 300 zestawów.
 
-Kolejnym krokiem była ewaluacja obciążeń węzłów, dla każdego zestawu i kazdej z zadanych wartości współczynnika obciążenia (zakres <0.5; 0.9> krok 0.05), wyliczane były miary według zadanych wzorów.
+Kolejnym krokiem była ewaluacja obciążeń węzłów, dla każdego zestawu i każdej z zadanych wartości współczynnika obciążenia (zakres <0.5; 0.9> krok 0.05), wyliczane były miary według zadanych wzorów.
 
 Niezmienność danych była uzyskiwana poprzez kopiowanie rezultatów uzyskanych przez algorytmy, w przypadku gdy do wektorów obciążeń węzłów były wprowadzanae zmiany, np. gdy była wymagana alokacja nadmiarowego obciążenia.
 
-Kopiowanie uzyskanych rezultatów okazało się być bardziej efektywne niż generacja i powtórne szeregowanie takiego samego zestawu danych, co pozwoliło znacząco skrócić czas trwania symulacji.
+Kopiowanie uzyskanych rezultatów okazało się bardziej efektywne niż generacja i powtórne szeregowanie takiego samego zestawu danych, co pozwoliło znacząco skrócić czas trwania symulacji.
 
 # Wyniki eksperymentu
 
