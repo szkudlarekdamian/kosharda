@@ -5,3 +5,6 @@ Programowa symulacja badająca problem równoważenia obciążenia przez alokacj
 
 1. Ustaw parametry symulacji w ```src/main.py```, nie zapomninając o nazwie pliku wynikowego
 2. Uruchom program ```python -m src.main```
+
+# Raport
+https://szkudlarekdamian.github.io/kosharda/raport.html
