@@ -31,7 +31,7 @@ library(DT)
 
 # Algorytmy przydziału
 ### BestFit (BF)
-Algorytm redukuje problem alokacji shardów do problemu szeregowania P || Cmax.
+Algorytm redukuje problem alokacji shardów do problemu szeregowania $P || C_{max}$.
 
 Węzły są traktowane jako równoległe maszyny, shardy jako niepodzielne zadania, wektor obciążenia shardu jest redukowany do średniej jego elementów, ta średnia jest długością trwania zadania.
 
@@ -47,6 +47,16 @@ Podejście naiwne - przydział zadań na węzły po kolei, algorytmem Round Robi
 ### SALP
 Algorytm pierwotnej alokacji shardów – SALP (Shards Allocation based on Load Prediction) - zgodnie ze specyfikacją.
 
+1. Wyznacz *sumaryczny wektor obciążenia* dla całej chmury $WTS = \sum{W_i}$.
+2. Wyznacz względne obciążenie przypadające na jeden węzeł chmury, czyli *znormalizowany wektor obciążenia* $NWTS = \frac{1}{N*WTS}$.
+3. Umieść wektory obciążenia $W_i$ wszystkich fragmentów danych na liście $LW$ posortowanej ze względu na malejący moduł. Porządek listy ma zapewnić odpowiednią kolejność alokacji fragmentów danych. 
+4. Dla każdego węzła utwórz pusty podzbiór fragmentów danych $FS_i$ i pusty wektor obciążenia węzła $WS_i$. Wszystkie węzły zaznacz jako aktywne.
+5. Przetwarzaj kolejno elementy $lw_i$ listy $LW$. 
+  a. Dodaj fragment danych $F_i$, do tego aktywnego podzbioru $FS_j$, dla którego dodanie wektora $W_i$ do wektora $WS_j$ zmaksymalizuje wartość różnicy między modułami dwóch wektorów niezrównoważenia obciążenia $\Delta j$: wektora przed potencjalnym dodaniem do niego obciążenia fragmentu $W_i$ i wektora niezrównoważenia po dodaniu obciążenia fragmentu $W_i$, czyli $\Delta (NWTS, WS_j) - \Delta(NWTS, WS_j + W_i)$. Przez wektor niezrównoważenia $\Delta(NWTS, WS_j)$ rozumiemy wektor, który jest różnicą między sumarycznym wektorem obciążenia danego węzła $WS_i$ i wektorem znormalizowanym $NWTS$.
+  b. Po dodaniu shardu do wybranego węzła modyfikuj jego wektor obciążenia $WS_j = WS_j + W_i$.
+  c. Jeżeli po tej modyfikacji moduł wektora obciążenia tego węzła $WS_j$ będzie większy niż moduł wektora $NWTS$, to zaznacz ten węzeł jako nieaktywny.
+
+
 # Eksperyment
 
 ## Parametry eksperymentu
@@ -55,14 +65,14 @@ Lista wybranych parametrów dla symulacji:
 
 1. Liczba węzłów $N=100$
 2. Liczba shardów $F=1000$ (średnio 10 shardów na węzeł)
-3. Długość cyklu - ilość elementów w cyklu (size) $S=100$
+3. Długość cyklu - liczba elementów w cyklu (size) $S=100$
 
 Sposób generowania danych przez generator rozkładu gamma: 
 
 1. Losowanie parametrów skali $\theta$ dla shardów z rozkładu gamma o kształcie $k=2$ i skali $\theta=5$
 2. Generowanie $S$ wartości dla każdego z $F$ shardów z rozkładu gamma o kształcie $k=2$ i skali $\theta$ wylosowanej jak opisano w punkcie 1.
 
-Parametry generowania danych w "Nowym modelu obciążenia":
+Parametry generowania danych w ["Nowym modelu obciążenia"](#nowy-model-obciążenia):
 
 1. Generacja wartości dolnej $low$ z rozkładu jednostajnego (1,5), generacja wartości $gap$ (wartość górna $high = low + gap$) z rozkładu jednostajnego (1,5)
 2. Generacja wartości kąta przechyłu z zakresu <-15; 15> (stopni)
@@ -114,10 +124,35 @@ df <- read.csv(file = '../results/N100-F1000-S100-R100-result-v14.csv') %>% muta
 df_rounded <- df %>% mutate(across(where(is.numeric), ~ round(., 2)))
 ```
 
+### Liczba wyników w zależności od obciążenia
+
+Poniższy wykres prezentuje liczbę poprawnych (takich, gdzie każdy węzeł jest stabilny) przyporządkowań shardów do węzłów wygenerowanych przed dany algorytm w zależności od obciążenia.
+
+
+```{r fig.width=10}
+df %>% 
+  filter(!is.na(value)) %>% 
+  ggplot(aes(x=load, fill=algorithm)) + geom_histogram(binwidth = 0.05, col="grey90") + 
+  facet_wrap(algorithm~.) +
+  theme(text=element_text(size=14),
+        panel.grid.major  = element_line(colour="grey60"),
+        panel.spacing.y = unit(1, "lines"),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "right") +
+    labs(x="obciążenie", 
+       y="liczba poprawnych przyporządkowań", 
+       colour="algorytm")
+
+```
+
+Należy zwrócić uwagę na to, że algorytm $RR$ nie był w stanie wygenerować poprawnego przyporządkowania dla wartości obciążenia $\rho > 0.7$, a dla wartości $\rho > 0.55$ wygenerowanych przyporządkowań jest na tyle mało, że nie ma pewności co do tego czy te wartości są reprezentatywne.
 
 ### Czas opóźnień, a korelacja
 
-Poniższy wykres jest zbiorczy dla wszystkich obciążeń. Osie są stałe, aby umożliwić porównanie zmiany w czasie oczekiwania przy różnych stopniach obciążenia węzłów i współczynnikach korelacji.
+Poniższe wykresy zestawiają średnie czasy opóźnień (oś Y) w zależności od wartości współczynnika korelacji (oś X) dla obciążeń z zakresu <0.5, 0.7>.
+
+Dla wykresów etykietowanych obciążeniami `0.5` i `0.55`, linia reprezentująca algorytm BestFit jest mało widoczna, lecz pokrywa się z linią algorytmu SALP.
+<br/>
 
 ```{r fig.width=10, fig.height=10}
 waitT <- df_rounded %>% 
@@ -141,18 +176,20 @@ ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
        colour="algorytm", 
        title = "Średni czas opóźnień na węzłach w zależności od współczynnika korelacji")
 ```
+<br/>
 
-Dla wartości obciążenia większych niż `0.7` przedstawiono zależności na osobnych wykresach.
+Dla wartości obciążenia większych niż `0.7` przedstawiono zależności na osobnych wykresach, ponieważ potrzebna jest większa skala osi Y. Ponadto z wykresów zniknęła linia reprezentująca algorytm Round Robin, z przyczyn opisanych w [powyższej sekcji](#liczba-wyników-w-zależności-od-obciążenia).
 
+<br/>
 ```{r fig.width=10, fig.height=5}
-waitT %>% filter(`obciążenie` > 0.7) %>% filter(correlation < 0.3) %>%
+waitT %>% filter(algorithm != 'RR')%>%filter(`obciążenie` > 0.7) %>% filter(correlation < 0.3) %>%
 ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
   geom_line(size=1)+
   facet_wrap(`obciążenie`~.,  labeller = label_both, ncol=2)+
   theme(text=element_text(size=14),
         axis.text=element_text(size=8),
         panel.grid.major  = element_line(colour="grey60"),
-        # panel.spacing.y = unit(0.5, "lines"),
+        # panel.spacing.y = runit(0.5, "lines"),
         plot.title = element_text(hjust = 0.5),
         legend.position = "right")+
   labs(x="współczynnik korelacji", 
@@ -185,25 +222,6 @@ waitT %>% filter(correlation %in% corrs)%>% rename(`współczynnik korelacji`=co
        title = "Średni czas opóźnień na węzłach w zależności od ich obciążenia")
 ```
 
-### Ilość wyników w zależności od obciażenia
-
-Poniższy wykres prezentuje ilość poprawnych (takich gdzie każdy węzeł jest stabilny) przyporządkowań shardów do węzłów wygenerowanych przed dany algorytm w zależności od obciążenia
-
-
-```{r fig.width=10}
-df %>% 
-  filter(!is.na(value)) %>% 
-  ggplot(aes(x=load, fill=algorithm)) + geom_histogram(binwidth = 0.05, col="grey90") + 
-  facet_wrap(algorithm~.) +
-  theme(text=element_text(size=14),
-        panel.grid.major  = element_line(colour="grey60"),
-        panel.spacing.y = unit(1, "lines"),
-        plot.title = element_text(hjust = 0.5),
-        legend.position = "right")
-
-```
-
-Należy zwrócić uwagę na to, że algorytm $RR$ nie był w stanie wygenerować poprawnego przyporządkowania dla wartości obciążenia $\rho > 0.7$, a dla wartości $\rho > 0.55$ wygenerowanych przyporządkowań jest na tyle mało, że nie ma pewności co do tego czy te wartości są repreznetatywne.
 
 ### Niezrównoważenie obciążenia, a korelacja
 
@@ -255,10 +273,13 @@ ggplot(aes(x=correlation, y=actual_load, colour="rzeczywiste")) +
 ```
 
 ### Współczynnik zmienności częstości przedkładania zadań, a korelacja
+<br/>
 
 Poniższy wykres wskazuje na powiązanie wartości zmienności częstości przedkładania zadań, z wartością współczynnika korelacji.
 
-```{r fig.width=12, fig.height=5}
+<br/>
+
+```{r fig.width=9, fig.height=5}
 df_rounded %>% group_by(algorithm, correlation) %>% 
   mutate(mean_ca = mean(mean_ca, na.rm = TRUE)) %>% ungroup() %>% 
   select(algorithm, correlation, mean_ca) %>%  distinct() %>%
@@ -268,7 +289,7 @@ ggplot(aes(x=correlation, y=mean_ca, colour=algorithm)) +
         axis.text=element_text(size=8),
         panel.grid.major  = element_line(colour="grey60"),
         # panel.spacing.y = unit(0.5, "lines"),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size=13.5),
         legend.position = "right")+
   labs(x="współczynnik korelacji", 
        y="zmiennośc częstości przedkładania zadań", 
@@ -276,7 +297,7 @@ ggplot(aes(x=correlation, y=mean_ca, colour=algorithm)) +
        title = "Współczynnik zmienności częstości przedkładania zadań w zależności od współczynnika korelacji")
 ```
 
-```{r fig.width=12, fig.height=5}
+```{r fig.width=9, fig.height=5}
 df_rounded %>% group_by(algorithm, load) %>% 
   mutate(mean_ca = mean(mean_ca, na.rm = TRUE)) %>% ungroup() %>% 
   select(algorithm, load, mean_ca) %>%  distinct() %>%
@@ -286,7 +307,7 @@ ggplot(aes(x=load, y=mean_ca, colour=algorithm)) +
         axis.text=element_text(size=8),
         panel.grid.major  = element_line(colour="grey60"),
         # panel.spacing.y = unit(0.5, "lines"),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size=13.5),
         legend.position = "right")+
   labs(x="wartość obciążenia", 
        y="zmiennośc częstości przedkładania zadań", 
@@ -296,7 +317,7 @@ ggplot(aes(x=load, y=mean_ca, colour=algorithm)) +
 
 ## Dane generowane według "Nowego modelu obciążenia"
 
-W tej sekcji przedstawione są wyniki dodatkowego eksperymentu, w którym dane były generowane według "nowego modelu obciążeń" (opisanego w jednej z wersji opisu problemu). W związku z tym, że dla tak generowanych danych, proces nie uwzględniał zmiany współczynnika korelacji, wystarczy przedstawic jedynie zależność czasu opóźnienia od obciążenia.
+W tej sekcji przedstawione są wyniki dodatkowego eksperymentu, w którym dane były generowane według ["nowego modelu obciążenia"](#nowy-model-obciążenia). W związku z tym, że dla tak generowanych danych, proces nie uwzględniał zmiany współczynnika korelacji, wystarczy przedstawić jedynie zależność czasu opóźnienia od obciążenia.
 
 ```{r}
 df <- read.csv(file = '../results/N100-F1000-S100-R100-result-v15.csv') %>% 
@@ -320,3 +341,30 @@ df %>% group_by(algorithm, load) %>%
        y="mediana czasu opóżnień", colour="algorytm", 
        title = "Czas opóżnień w zależności od obciążenia")
 ```
+
+<br/>
+<br/>
+
+### "Nowy model obciążenia"
+![Szacowanie opóźnień v4 - dr Tomasz Koszlajda 2020](v4.pdf){width=800 height=400}
+
+<br/>
+<br/>
+
+## Wnioski
+
+Po przeprowadzeniu symulacji, teza zostaje uznana za prawdziwą.
+
+> Algorytm SALP redukuje opóźnienia będące wynikiem chwilowych przeciążeń pojedynczych węzłów chmury w zależności od współczynnika korelacji przebiegów obciążenia różnych shardów.
+
+Bezpośrednim wnioskiem jest to, że algorytm SALP znacznie wydajniej porządkuje shardy na węzłach, w porównaniu do algorytmu Round Robin.
+Wraz ze wzrostem obciążenia algorytm SALP utrzymywał stabilność na węzłach, podczas gdy algorytm Round Robin tracił stabilność przy obciążeniu większym niż 55%.
+
+Średnie czasy opóźnień uzyskane po zastosowaniu algorytmów SALP i Best Fit okazały się konkurencyjne dla większości poziomów obciążenia, lecz przy obciążeniach wysokich, tj. 85% i 90% SALP wyróżnił się osiągając niższe czasy opóźnień (spostrzeżenia dotyczą wszystkich współczynników korelacji).
+Algorytm SALP wraz ze wzrostem współczynnika korelacji charakteryzował się najniższym niezrównoważeniem obciążenia chmury.
+Obserwując zmienność częstości przedkładania zadań również zauważymy wyższość algorytmu SALP nad konkurentami.
+
+Ostatecznie, po przeanalizowaniu wyników symulacji, algorytm SALP uzyskiwał najbardziej optymalne rezultaty, wyróżniając się najbardziej w sytuacji, gdy obciążenie było bardzo wysokie.
+
+
+
