@@ -187,14 +187,20 @@ waitT %>% filter(correlation %in% corrs)%>% rename(`współczynnik korelacji`=co
 
 ### Ilość wyników w zależności od obciażenia
 
-Poniższa tabela prezentuje ilość poprawnych (takich gdzie każdy węzeł jest stabilny) przyporządkowań shardów do węzłów wygenerowanych przed dany algorytm w zależności od obciążenia
+Poniższy wykres prezentuje ilość poprawnych (takich gdzie każdy węzeł jest stabilny) przyporządkowań shardów do węzłów wygenerowanych przed dany algorytm w zależności od obciążenia
 
-```{r}
-knitr::kable(
+
+```{r fig.width=10}
 df %>% 
   filter(!is.na(value)) %>% 
-  group_by(algorithm, load) %>% count()
-)
+  ggplot(aes(x=load, fill=algorithm)) + geom_histogram(binwidth = 0.05, col="grey90") + 
+  facet_wrap(algorithm~.) +
+  theme(text=element_text(size=14),
+        panel.grid.major  = element_line(colour="grey60"),
+        panel.spacing.y = unit(1, "lines"),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "right")
+
 ```
 
 Należy zwrócić uwagę na to, że algorytm $RR$ nie był w stanie wygenerować poprawnego przyporządkowania dla wartości obciążenia $\rho > 0.7$, a dla wartości $\rho > 0.55$ wygenerowanych przyporządkowań jest na tyle mało, że nie ma pewności co do tego czy te wartości są repreznetatywne.
