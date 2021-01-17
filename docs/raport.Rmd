@@ -197,7 +197,9 @@ ggplot(aes(x=correlation, y=mean_waiting_time, colour=algorithm)) +
        colour="algorytm", 
        title = "Średni czas opóźnień na węzłach w zależności od współczynnika korelacji")
 ```
+Jednocześnie należy zwrócić uwagę na fakt, że został ograniczony zakres wartości na osi X.
 
+Na wykresach obserwujemy znaczące korzyści z wykorzystania algorytmu do przydziału shardów w stosunku do naiwnego podejścia (Round Robin). Dodatkowo należy zwrócić uwagę na to, że algorytm SALP uzyskuje lepsze wyniki niż BestFit. 
 
 ### Czas opóźnień, a obciążenie
 
@@ -222,6 +224,7 @@ waitT %>% filter(correlation %in% corrs)%>% rename(`współczynnik korelacji`=co
        title = "Średni czas opóźnień na węzłach w zależności od ich obciążenia")
 ```
 
+Na powyższych wykresach warto zwrócić uwagę na ostatni - dla współczynnika korelacji równego 1. W przedstawionym wypadku algorytm SALP osiąga praktycznie takie same wyniki jak Best Fit - wynika to z faktu, że dla współczynnika korelacji przebiegi mają taką samą serię wzrostów i spadków, różnią się jedynie skalą, co uniemożliwia optymalizowanie niezrównoważenia, co stara się robić algorytm SALP, przez co jednocześnie redukuje się wymiarowość problemu - w związku z brakiem różnic zmianach przebiegów wektorów obciążenia, w praktyce można je zredukować jedynie do sumarycznego lub średniego obciążenia, co w praktyce robi algorytm Best Fit.
 
 ### Niezrównoważenie obciążenia, a korelacja
 
@@ -243,12 +246,17 @@ ggplot(aes(x=correlation, y=disturbance, colour=algorithm)) +
        y="względne niezrównoważenie obciążenia", colour="algorytm", 
        title = "Względne niezrównoważenie obciążenia chmury w zależności od współczynnika korelacji")
 ```
+
+Na powyższym wykresie obserwujemy względne niezrównoważenie obciążenia węzłów, dla wskazancyh algorytmów w zalezności od współczynnika korelacji. Potwierdza się teza opisana w poprzednim paragrafie, gdyż dla współczynnika korelacji równego 1 obserwujemy wartość niezrównoważenia równą 0 dla algorytmów SALP i Best Fit.
+
 <br/>
 <br/>
 
 ### Obciążenie chmury, a korelacja
 
-Poniższy wykres dotyczy generowanych danych, linia ciągła prezentuje średnie sumaryczne obciążenie chmury, a prosta linia przerywana to wartość estymowana na podstawie parametrów generacji.
+Poniższy wykres dotyczy generowanych danych, linia ciągła prezentuje średnie sumaryczne obciążenie chmury, a prosta linia przerywana to wartość estymowana na podstawie parametrów generacji. 
+
+W związku z tym, że w symulacjach były używane te same ziarna losowe generatora, ten wykres obrazuje wpływ transofrmacji powiazanych z korelacją na zmiany w generowanych rozkładach.
 
 
 ```{r fig.width=10, fig.height=5}
@@ -297,6 +305,10 @@ ggplot(aes(x=correlation, y=mean_ca, colour=algorithm)) +
        title = "Współczynnik zmienności częstości przedkładania zadań w zależności od współczynnika korelacji")
 ```
 
+Powyższy wykres wskazuje na istnienie zależności pomiędzy współczynnikiem korelacji a współczynnikiem zmienności częśtości przedkłądania zadań. 
+
+Jednocześnie można stwierdzić że dla małych wartości współczynnika korelacji algorytm SALP jest w stanie zmniejszać wartość tego współczynnika, jednocześnie redukując czasy opóźnień.
+
 ```{r fig.width=9, fig.height=5}
 df_rounded %>% group_by(algorithm, load) %>% 
   mutate(mean_ca = mean(mean_ca, na.rm = TRUE)) %>% ungroup() %>% 
@@ -315,6 +327,8 @@ ggplot(aes(x=load, y=mean_ca, colour=algorithm)) +
        title = "Współczynnik zmienności częstości przedkładania zadań w zależności od wartości obciążenia")
 ```
 
+Jednocześnie obserwujemy brak zależności między obciążeniem a współczynnikiem zmienności częśtości przedkłądania zadań, wynika to z tego, że wartość obciążenia nie jest potrzebna ani na etapie generowania danych ani na etapie wykonywania algorytmów, przez co wartość obciążenia nie ma wpływu na ułożenie zadań.
+
 ## Dane generowane według "Nowego modelu obciążenia"
 
 W tej sekcji przedstawione są wyniki dodatkowego eksperymentu, w którym dane były generowane według ["nowego modelu obciążenia"](#nowy-model-obciążenia). W związku z tym, że dla tak generowanych danych, proces nie uwzględniał zmiany współczynnika korelacji, wystarczy przedstawić jedynie zależność czasu opóźnienia od obciążenia.
@@ -327,7 +341,7 @@ df <- read.csv(file = '../results/N100-F1000-S100-R100-result-v15.csv') %>%
 df_rounded <- df %>% mutate(across(where(is.numeric), ~ round(., 2)))
 ```
 
-```{r fig.width=10}
+```{r fig.width=6}
 df %>% group_by(algorithm, load) %>% 
   mutate(mean_waiting_time = median(value, na.rm = TRUE)) %>% 
   ggplot(aes(x=load, y=mean_waiting_time, colour=algorithm)) + geom_line(size=1) +
@@ -342,11 +356,30 @@ df %>% group_by(algorithm, load) %>%
        title = "Czas opóżnień w zależności od obciążenia")
 ```
 
+```{r fig.width=6}
+df %>% group_by(algorithm) %>% 
+  mutate(mean_ca = median(mean_ca, na.rm = TRUE)) %>% 
+  ggplot(aes(x=algorithm, y=mean_ca, fill=algorithm)) + geom_col() +
+  theme(text=element_text(size=14),
+        axis.text=element_text(size=8),
+        panel.grid.major  = element_line(colour="grey60"),
+        # panel.spacing.y = unit(0.5, "lines"),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "right")+
+  labs(x="algorytm", 
+       y="średnie niezrównoważenie", colour="algorytm", 
+       title = "Względne niezrównoważenie dla algorytmu")
+```
+
+Nowy Model Obciążeń charakteryzuje się tym, że do dobrego przydzielenia shardów, wymagane jest branie pod uwagę niezrównoważenia. Jasne więc jest, ze algorytm SALP, który bierze pod uwagę niezrównoważenie, osiąga znacząco lepszy rezultat niż konkurencja.
+
+<!--
 <br/>
 <br/>
 
 ### "Nowy model obciążenia"
 ![Szacowanie opóźnień v4 - dr Tomasz Koszlajda 2020](v4.pdf){width=800 height=400}
+-->
 
 <br/>
 <br/>
@@ -364,7 +397,7 @@ Wraz ze wzrostem obciążenia algorytm SALP utrzymywał stabilność na węzłac
 Algorytm SALP wraz ze wzrostem współczynnika korelacji charakteryzował się najniższym niezrównoważeniem obciążenia chmury.
 Obserwując zmienność częstości przedkładania zadań również zauważymy wyższość algorytmu SALP nad konkurentami.
 
-Ostatecznie, po przeanalizowaniu wyników symulacji, algorytm SALP uzyskiwał najbardziej optymalne rezultaty, wyróżniając się najbardziej w sytuacji, gdy obciążenie było bardzo wysokie.
+Ostatecznie, po przeanalizowaniu wyników symulacji, algorytm SALP uzyskiwał najbardziej optymalne rezultaty, wyróżniając się najbardziej w sytuacji, gdy należy optymalizować niezrównoważanie.
 
 
 
