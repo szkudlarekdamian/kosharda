@@ -224,7 +224,7 @@ waitT %>% filter(correlation %in% corrs)%>% rename(`współczynnik korelacji`=co
        title = "Średni czas opóźnień na węzłach w zależności od ich obciążenia")
 ```
 
-Na powyższych wykresach warto zwrócić uwagę na ostatni - dla współczynnika korelacji równego 1. W przedstawionym wypadku algorytm SALP osiąga praktycznie takie same wyniki jak Best Fit - wynika to z faktu, że dla współczynnika korelacji przebiegi mają taką samą serię wzrostów i spadków, różnią się jedynie skalą, co uniemożliwia optymalizowanie niezrównoważenia, co stara się robić algorytm SALP, przez co jednocześnie redukuje się wymiarowość problemu - w związku z brakiem różnic zmianach przebiegów wektorów obciążenia, w praktyce można je zredukować jedynie do sumarycznego lub średniego obciążenia, co w praktyce robi algorytm Best Fit.
+Na powyższych wykresach warto zwrócić uwagę na ostatni - dla współczynnika korelacji równego 1. W przedstawionym wypadku algorytm SALP osiąga praktycznie takie same wyniki jak Best Fit - wynika to z faktu, że dla współczynnika korelacji przebiegi mają taką samą serię wzrostów i spadków, różnią się jedynie skalą. Przez to uniemożliwione jest optymalizowanie niezrównoważenia, co stara się robić algorytm SALP, przez co jednocześnie redukuje się wymiarowość problemu - w związku z brakiem różnic w zmianach przebiegów wektorów obciążenia. W praktyce można je zredukować jedynie do sumarycznego lub średniego obciążenia, a to robi algorytm Best Fit.
 
 ### Niezrównoważenie obciążenia, a korelacja
 
@@ -256,7 +256,7 @@ Na powyższym wykresie obserwujemy względne niezrównoważenie obciążenia wę
 
 Poniższy wykres dotyczy generowanych danych, linia ciągła prezentuje średnie sumaryczne obciążenie chmury, a prosta linia przerywana to wartość estymowana na podstawie parametrów generacji. 
 
-W związku z tym, że w symulacjach były używane te same ziarna losowe generatora, ten wykres obrazuje wpływ transofrmacji powiazanych z korelacją na zmiany w generowanych rozkładach.
+W związku z tym, że w symulacjach były używane te same ziarna losowe generatora, ten wykres obrazuje wpływ transformacji powiązanych z korelacją, na zmiany w generowanych rozkładach.
 
 
 ```{r fig.width=10, fig.height=5}
@@ -305,7 +305,7 @@ ggplot(aes(x=correlation, y=mean_ca, colour=algorithm)) +
        title = "Współczynnik zmienności częstości przedkładania zadań w zależności od współczynnika korelacji")
 ```
 
-Powyższy wykres wskazuje na istnienie zależności pomiędzy współczynnikiem korelacji a współczynnikiem zmienności częśtości przedkłądania zadań. 
+Powyższy wykres wskazuje na istnienie zależności pomiędzy współczynnikiem korelacji a współczynnikiem zmienności częśtości przedkładania zadań. 
 
 Jednocześnie można stwierdzić że dla małych wartości współczynnika korelacji algorytm SALP jest w stanie zmniejszać wartość tego współczynnika, jednocześnie redukując czasy opóźnień.
 
@@ -327,7 +327,7 @@ ggplot(aes(x=load, y=mean_ca, colour=algorithm)) +
        title = "Współczynnik zmienności częstości przedkładania zadań w zależności od wartości obciążenia")
 ```
 
-Jednocześnie obserwujemy brak zależności między obciążeniem a współczynnikiem zmienności częśtości przedkłądania zadań, wynika to z tego, że wartość obciążenia nie jest potrzebna ani na etapie generowania danych ani na etapie wykonywania algorytmów, przez co wartość obciążenia nie ma wpływu na ułożenie zadań.
+Obserwujemy brak zależności między obciążeniem, a współczynnikiem zmienności częstości przedkładania zadań. Wynika to z tego, że wartość obciążenia nie jest potrzebna, ani na etapie generowania danych, ani na etapie wykonywania algorytmów - przez co wartość obciążenia nie ma wpływu na kolejność zadań.
 
 ## Dane generowane według "Nowego modelu obciążenia"
 
@@ -371,7 +371,7 @@ df %>% group_by(algorithm) %>%
        title = "Względne niezrównoważenie dla algorytmu")
 ```
 
-Nowy Model Obciążeń charakteryzuje się tym, że do dobrego przydzielenia shardów, wymagane jest branie pod uwagę niezrównoważenia. Jasne więc jest, ze algorytm SALP, który bierze pod uwagę niezrównoważenie, osiąga znacząco lepszy rezultat niż konkurencja.
+Nowy Model Obciążeń charakteryzuje się tym, że do dobrego przydzielenia shardów, wymagane jest branie pod uwagę niezrównoważenia. Jasne więc jest, że algorytm SALP, który bierze pod uwagę niezrównoważenie, osiąga znacząco lepszy rezultat niż konkurencja.
 
 <!--
 <br/>
